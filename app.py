@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 
 app = Dash(__name__)
+server = app.server
 
 
 # read aligned data files.
