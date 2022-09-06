@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
-app = Dash(__name__, url_base_pathname='/multimodal/')
+app = Dash(__name__)
 server = app.server
 
 
