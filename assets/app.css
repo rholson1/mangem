@@ -5,3 +5,71 @@ a {
   cursor: pointer;}
 a:hover {
   color: #0FA0CE; }
+
+
+.upload-button {
+  width: 60%;
+  height: 10px;
+  line-height: 15px;
+  border-width: 1px;
+  border-style: dashed;
+  border-radius: 5px;
+  text-align: center;
+  margin: 10px;
+  padding: 20px;
+  display: inline-block;
+}
+
+#main-block {
+  display: flex;
+}
+
+#left-panel {
+  flex: 1;
+  margin: 10px;
+  padding: 10px;
+  background-color: white;
+}
+
+#right-panel {
+  flex: 3;
+}
+
+.block-title {
+  position: relative;
+  margin: 0;
+  margin-bottom: -15px;
+  top: -15px;
+  left: 5px;
+  width: fit-content;
+  padding: 5px;
+  background-color: white;
+}
+#data-block, #operations-block, #controls-block {
+  margin-top: 15px;
+  border: 1px solid gray;
+  padding: 0 10px 10px 10px;
+}
+
+#operations-block button {
+  display: block;
+  margin-right: 10px;
+}
+#operations-block div {
+  display: inline-block;
+}
+
+.upload-block {
+  margin-top: 5px;
+}
+
+
+/*.upload-block div {*/
+/*  display: inline-block;*/
+/*  width: fit-content;*/
+/*}*/
+
+.upload {
+  display: inline-block;
+  width: fit-content;  /* prevent capture of clicks outside button */
+}
