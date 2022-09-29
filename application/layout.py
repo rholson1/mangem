@@ -9,9 +9,12 @@ def get_layout():
     session_id = str(uuid.uuid4())
 
     layout = html.Div(children=[
-        dcc.Store(data=session_id, id='session_id'),
+        dcc.Store(id='session_id', data=session_id),
+        dcc.Store(id='store-data_selected', data='0'),
+        dcc.Store(id='store-aligned', data='0'),
 
         html.H1(children='BRAIN - Multimodal Alignment'),
+
 
         html.Div(children='''
         Demonstration of plotting aligned data in latent space (first three dimensions).
@@ -29,47 +32,55 @@ def get_layout():
                             children=[
                                 html.H3('Data', className='block-title'),
                                 html.P('Upload datasets to be aligned, optionally with metadata.'),
-                                html.Div(
-                                    className='upload-block',
-                                    children=[
-                                        dcc.Input(
-                                            id='upload_1_label',
-                                            type='text',
-                                            placeholder='File 1 Label'
-                                        ),
-                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 1},
-                                                   children=html.Button('Upload File 1'), className='upload'),
-                                        html.Div(id={'type': 'dynamic-output', 'index': 1}),
-                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 2},
-                                                   children=html.Button('Metadata'), className='upload'),
-                                        html.Div(id={'type': 'dynamic-output', 'index': 2})
-                                    ]
-                                ),
-                                html.Div(
-                                    className='upload-block',
-                                    children=[
-                                        dcc.Input(
-                                            id='upload_2_label',
-                                            type='text',
-                                            placeholder='File 2 Label'
-                                        ),
-                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 3},
-                                                   children=html.Button('Upload File 2'), className='upload'),
-                                        html.Div(id={'type': 'dynamic-output', 'index': 3}),
-                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 4},
-                                                   children=html.Button('Metadata'), className='upload'),
-                                        html.Div(id={'type': 'dynamic-output', 'index': 4})
-                                    ]
+
+                                html.H4('Select Data'),
+                                dcc.Dropdown(
+                                    id='data-selector',
+                                    options={
+                                        'visual': 'scMNC Mouse Visual Cortex',
+                                        'motor': 'scMNC Mouse Motor Cortex',
+                                        'upload': 'Upload your data!'
+                                    },
+                                    value=''
                                 ),
 
-                                html.H4('Preloaded Mouse Data'),
-                                dcc.Dropdown(
-                                    id='mouse-selector',
-                                    options={
-                                        'visual': 'Visual Cortex',
-                                        'motor': 'Motor Cortex'
-                                    },
-                                    value='visual'
+                                html.Div(
+                                    id='upload-container',
+                                    className='hidden',
+                                    children=[
+                                        html.Div(
+                                            className='upload-block',
+                                            children=[
+                                                dcc.Input(
+                                                    id='upload_1_label',
+                                                    type='text',
+                                                    placeholder='File 1 Label'
+                                                ),
+                                                dcc.Upload(id={'type': 'dynamic-upload', 'index': 1},
+                                                           children=html.Button('Upload File 1'), className='upload'),
+                                                html.Div(id={'type': 'dynamic-output', 'index': 1}),
+                                                dcc.Upload(id={'type': 'dynamic-upload', 'index': 2},
+                                                           children=html.Button('Metadata'), className='upload'),
+                                                html.Div(id={'type': 'dynamic-output', 'index': 2})
+                                            ]
+                                        ),
+                                        html.Div(
+                                            className='upload-block',
+                                            children=[
+                                                dcc.Input(
+                                                    id='upload_2_label',
+                                                    type='text',
+                                                    placeholder='File 2 Label'
+                                                ),
+                                                dcc.Upload(id={'type': 'dynamic-upload', 'index': 3},
+                                                           children=html.Button('Upload File 2'), className='upload'),
+                                                html.Div(id={'type': 'dynamic-output', 'index': 3}),
+                                                dcc.Upload(id={'type': 'dynamic-upload', 'index': 4},
+                                                           children=html.Button('Metadata'), className='upload'),
+                                                html.Div(id={'type': 'dynamic-output', 'index': 4})
+                                            ]
+                                        ),
+                                    ]
                                 ),
 
                             ]
@@ -78,34 +89,49 @@ def get_layout():
                         html.Div(
                             id='operations-block',
                             children=[
-                                html.H3('Operations', className='block-title'),
+                                html.H3('Dataset Alignment', className='block-title'),
                                 html.Div([
-                                    html.Div([
-                                        html.Button('Align Datasets', id='btn-align'),
-                                        dcc.RadioItems(
-                                            id='eig-method',
-                                            options={
-                                                'eig': 'eig',
-                                                'eigs': 'eigs'
-                                            },
-                                            value='eig'
-                                        ),
+                                    html.P(id='alignment-state', className='status_message'),
+                                    html.Button('Align Datasets', id='btn-align'),
+                                    html.Details([
+                                        html.Summary('Alignment parameters'),
+                                        html.Div([
+                                            html.Label(
+                                                children=[
+                                                    'eigenvalue method: ',
+                                                    dcc.RadioItems(
+                                                        id='eig-method',
+                                                        options={
+                                                            'eig': 'eig',
+                                                            'eigs': 'eigs',
+                                                            'eigsh': 'eigsh'
+                                                        },
+                                                        value='eigs'
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Br(),
+                                            html.Label([
+                                                '# eigenvalues: ',
+                                                dcc.Input(id='eig-count', value='5', style={'width': '20px'}),
+                                            ]),
+                                        ]),
                                         html.Button('Identify Clusters', id='btn-cluster'),
 
-                                    ], style={'flex': 1}),
-                                    html.Div([
-                                        dcc.Loading(id='loading-1', children=html.Div(id='loading-output-1')),
+                                    ]),
+                                    html.Div(id='progress_container', children=[
+                                        dcc.Loading(id='loading-1', children=html.Div(id='loading-output-1') ),
                                         html.Br(),
                                         dcc.Loading(id='loading-2', children=html.Div(id='loading-output-2')),
-                                    ], style={'flex': 1})
-                                ], style={'display': 'flex'})
+                                    ])
+                                ])
                             ]
                         ),
 
                         html.Div(
                             id='controls-block',
                             children=[
-                                html.H3('Plot Controls', className='block-title'),
+                                html.H3('Visualization', className='block-title'),
                                 html.Div([
                                     html.H4('Plot type'),
                                     dcc.Dropdown(
@@ -115,7 +141,8 @@ def get_layout():
                                             'separate2': 'Separate 2-D plots',
                                             'separate3': 'Separate 3-D plots',
                                             'bibiplot': 'Bibiplot'
-                                        }
+                                        },
+                                        value='alignment'
                                     ),
 
                                     html.H4('Color by...'),
@@ -139,7 +166,7 @@ def get_layout():
                                 dcc.Graph(
                                     id='graph-combined',
                                     figure=go.Figure(),
-                                    style={'height': '600px', 'width': '100%'}
+                                    style={'height': '600px', 'width': '600px'}
                                 ),
                             ]
                         )

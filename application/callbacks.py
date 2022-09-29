@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc, Output, Input, State, MATCH
+from dash import Dash, html, dcc, Output, Input, State, MATCH, ctx
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import scale
 
-from plots import create_bibiplot
+from plots import create_bibiplot, create_alignment_plot
 from operations.alignment import nonlinear_manifold_alignment
 from operations.maninetcluster.util import Timer
 
@@ -18,6 +18,21 @@ color_types = {'ttype': 't-type', 'gmm_cluster': 'Cluster'}
 
 
 def register_callbacks(app, cache):
+    @app.callback(
+        Output('upload-container', 'className'),
+        Output('store-data_selected', 'data'),
+        Input('data-selector', 'value'),
+    )
+    def select_data(dataset):
+        """Handle changes to the data selection dropdown
+        """
+        if dataset == 'upload':
+            className = ''
+        else:
+            className = 'hidden'
+        return className, str(time.time())
+
+
     @app.callback(
         Output({'type': 'dynamic-output', 'index': MATCH}, 'children'),
         Input({'type': 'dynamic-upload', 'index': MATCH}, 'contents'),
@@ -29,15 +44,19 @@ def register_callbacks(app, cache):
 
     @app.callback(
         Output(component_id='graph-combined', component_property='figure'),
+        Output('graph-combined', 'style'),
         Input('session_id', 'data'),
-        Input(component_id='mouse-selector', component_property='value'),
         Input(component_id='plot-type', component_property='value'),
         Input(component_id='color-type', component_property='value'),
+        Input('store-aligned', 'data'),
+        State('data-selector', 'value'),
         prevent_initial_call=True
     )
-    def update_alignment_plot(session_id, dataset, plot_type, color_type):
+    def update_plot(session_id, plot_type, color_type, last_aligned, dataset):
+        """Display visualization based on available data and selected visualization options
+        """
         # read aligned data files.
-        if not dataset:
+        if dataset not in ('visual', 'motor'):
             return go.Figure()
 
         efeatures_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_NMA.csv')
@@ -48,31 +67,23 @@ def register_callbacks(app, cache):
         geneExp_NMA['gmm_cluster'] = geneExp_NMA['gmm_cluster'].astype('string')
         Xg = np.array(geneExp_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
 
-        # loading aligned data from cache
-        Xe = np.array(pd.read_json(cache.get(f'{session_id}-aligned_1')))
-        Xg = np.array(pd.read_json(cache.get(f'{session_id}-aligned_2')))
+        aligned = 'true'  # temporary override
 
+        if aligned == 'true':
+            # loading aligned data from cache
+            Xe = np.array(pd.read_json(cache.get(f'{session_id}-aligned_1')))
+            Xg = np.array(pd.read_json(cache.get(f'{session_id}-aligned_2')))
+        else:
+            return go.Figure(), {}
 
+        # Xe = scale(Xe)
+        # Xg = scale(Xg)
+
+        style = {}  # default
         if plot_type == 'alignment':
-            # plot both sets of data (first three dimensions)
-            fig_e = px.scatter_3d(Xe, x=0, y=1, z=2).update_traces(name='Electrophys',
-                                                                   marker={'color': 'red', 'size': 0.75},
-                                                                   showlegend=True)
-            fig_g = px.scatter_3d(Xg, x=0, y=1, z=2).update_traces(name='Gene Expression',
-                                                                   marker={'color': 'blue', 'size': 0.75},
-                                                                   showlegend=True)
-            fig = go.Figure(data=fig_e.data + fig_g.data)
-
-            fig.update_layout(
-                title=f'Multimodal Alignment in Latent Space: Mouse {dataset.title()} Cortex',
-                showlegend=True,
-                scene={
-                    'xaxis_title': '',
-                    'yaxis_title': '',
-                    'zaxis_title': '',
-                },
-                legend={'itemsizing': 'constant'}
-            )
+            fig = create_alignment_plot(Xe, Xg, dataset)
+            fig.update_layout()
+            style = {'height': '600px', 'width': '1000px'}
         elif plot_type == 'separate2':
             # Create two 2-D plots side by side for the two modalities.
             fig = make_subplots(rows=1, cols=2, subplot_titles=('Electrophys', 'Gene Expression'))
@@ -99,6 +110,7 @@ def register_callbacks(app, cache):
 
                 fig.add_trace(fig_e.data[0], row=1, col=1)
                 fig.add_trace(fig_g.data[0], row=1, col=2)
+            style = {'height': '600px', 'width': '1000px'}
 
         elif plot_type == 'separate3':
             # Create two 2-D plots side by side for the two modalities.
@@ -129,31 +141,41 @@ def register_callbacks(app, cache):
 
                 fig.add_trace(fig_e.data[0], row=1, col=1)
                 fig.add_trace(fig_g.data[0], row=1, col=2)
+            style = {'height': '600px', 'width': '1000px'}
+
         elif plot_type == 'bibiplot':
-            return create_bibiplot()
+            fig = create_bibiplot(Xg, Xe)
+            style = {'height': '600px', 'width': '600px'}
         else:
             # No plot type specified - show a blank plot
             fig = go.Figure().update_layout()
 
-        return fig
+        return fig, style
 
     @app.callback(
         Output(component_id='loading-output-1', component_property='children'),
+        Output('store-aligned', 'data'),
         Input('session_id', 'data'),
         Input(component_id='btn-align', component_property='n_clicks'),
+        Input(component_id='data-selector', component_property='value'),
         State(component_id='eig-method', component_property='value'),
-        State(component_id='mouse-selector', component_property='value'),
+        State(component_id='eig-count', component_property='value'),
+
         prevent_initial_call=True
     )
-    def align_datasets(session_id, value, eig_method, mouse_set):
+    def align_datasets(session_id, value, dataset, eig_method, eig_count):
         # perform dataset alignment
 
-        day_ortho = np.genfromtxt("data/maninetcluster/dayOrthoExpr.csv", delimiter=',')[1:, 1:]
-        night_ortho = np.genfromtxt("data/maninetcluster/nightOrthoExpr.csv", delimiter=',')[1:, 1:]
-        num_dims = 2
+        if dataset in ('motor', 'visual'):
+            # use precomputed mouse cortex data
+            pass
+        else:
+            # use uploaded data, if any
+            return 'select mouse data for now'
+            pass
 
-        dataset = 'motor'
-        efeatures_NMA = pd.read_csv(f'data/mouse_{mouse_set}_cortex/efeature_filtered.csv') #, dtype=float)
+
+        efeatures_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
         # Xe = np.array(efeatures_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
 
         # drop the first column if it contains strings
@@ -166,7 +188,7 @@ def register_callbacks(app, cache):
         # from https://github.com/daifengwanglab/scMNC/blob/main/mouse_motor_cortex/code/dimreduction_clustering_motor.Rmd
         # it looks like columns of Xe need to be centered and scaled: subtract mean and divide by std dev.
         Xe = scale(Xe)
-        geneExp_NMA = pd.read_csv(f'data/mouse_{mouse_set}_cortex/geneExp_filtered.csv', header=0).T
+        geneExp_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', header=0).T
 
         # geneExp_NMA['gmm_cluster'] = geneExp_NMA['gmm_cluster'].astype('string')
         # Xg = np.array(geneExp_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
@@ -179,13 +201,13 @@ def register_callbacks(app, cache):
         # k_medoid = 5
 
         #with Timer('nonlinear manifold alignment (ortho)'):
-        proj, _ = nonlinear_manifold_alignment(Xe, Xg, 20, eig_method=eig_method)
+        proj, _ = nonlinear_manifold_alignment(Xe, Xg, 20, eig_method=eig_method, eig_count=int(eig_count))
 
         # store aligned datasets for later retrieval
         aligned_1, aligned_2 = proj
         cache.set(f'{session_id}-aligned_1', pd.DataFrame(aligned_1).to_json())
         cache.set(f'{session_id}-aligned_2', pd.DataFrame(aligned_2).to_json())
-        return 'Dataset aligned'
+        return '', str(time.time())
 
     @app.callback(
         Output(component_id='loading-output-2', component_property='children'),
@@ -196,3 +218,25 @@ def register_callbacks(app, cache):
         # identify clusters
         time.sleep(2)
         return 'Clusters identified'
+
+
+    # @app.callback(
+    #     Output('store-aligned', 'data'),
+    #     Output('alignment-state', 'children'),
+    #     Input('btn-align', 'n_clicks'),
+    #     Input('data-selector', 'value'),
+    # )
+    # def set_alignment_state(button, dataset):
+    #     """ If the data are aligned (via clicking on the alignment button) then set alignment state to true.
+    #     If anything else changes that could invalidate the alignment, set alignment state to false.
+    #
+    #     This will likely need to change if/when alignment is automatically triggered.
+    #     """
+    #     if ctx.triggered_id == 'btn-align':
+    #         return 'true', 'Status: Aligned'
+    #     else:
+    #         return 'false', 'Status: Not Aligned'
+
+
+
+

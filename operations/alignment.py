@@ -7,7 +7,7 @@ from .maninetcluster.distance import SquaredL2
 from .maninetcluster.util import Timer
 
 
-def nonlinear_manifold_alignment(X, Y, num_dims=2, eig_method='eig'):
+def nonlinear_manifold_alignment(X, Y, num_dims=2, eig_method='eigs', eig_count=5):
     # e.g.
     # day_ortho = np.genfromtxt("data/maninetcluster/dayOrthoExpr.csv", delimiter=',')[1:, 1:]
     # night_ortho = np.genfromtxt("data/maninetcluster/nightOrthoExpr.csv", delimiter=',')[1:, 1:]
@@ -19,7 +19,7 @@ def nonlinear_manifold_alignment(X, Y, num_dims=2, eig_method='eig'):
     Wy = neighbor_graph(Y, k=2)  # was k=5
     # num_dims = 2
 
-    proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method)
+    proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method, eig_count=eig_count)
     return proj, {'pairwise_error': pairwise_error(*proj, metric=SquaredL2)}
 
 
@@ -29,11 +29,11 @@ def _manifold_setup(Wx, Wy, Wxy, mu):
     return laplacian(W)
 
 
-def _manifold_decompose(L, d1, d2, num_dims, eps, vec_func=None, eig_method=None):
+def _manifold_decompose(L, d1, d2, num_dims, eps, vec_func=None, eig_method=None, eig_count=0):
     if eig_method == 'eig':
         vals, vecs = np.linalg.eig(L)
     elif eig_method == 'eigs':
-        vals, vecs = eigs(L, k=num_dims + 2, sigma=0, which='LR')  # assume no more than 2 0-valued eigenvalues
+        vals, vecs = eigs(L, k=eig_count, sigma=0, which='LR')  # assume no more than 2 0-valued eigenvalues
 
 
     # with Timer('eig'):
@@ -60,7 +60,7 @@ def _manifold_decompose(L, d1, d2, num_dims, eps, vec_func=None, eig_method=None
     return map1, map2
 
 
-def manifold_nonlinear(X, Y, num_dims, Wx, Wy, mu=0.9, eps=1e-8, eig_method=None):
+def manifold_nonlinear(X, Y, num_dims, Wx, Wy, mu=0.9, eps=1e-8, eig_method=None, eig_count=0):
     corr = np.eye(len(X))  # X and Y are perfectly correlated
     L = _manifold_setup(Wx, Wy, corr, mu)
-    return _manifold_decompose(L, X.shape[0], Y.shape[0], num_dims, eps, eig_method=eig_method)
+    return _manifold_decompose(L, X.shape[0], Y.shape[0], num_dims, eps, eig_method=eig_method, eig_count=eig_count)

@@ -1,4 +1,8 @@
 
+.hidden {
+  display: none;
+}
+
 a {
   color: #1EAEDB;
   text-decoration: underline;
@@ -72,4 +76,33 @@ a:hover {
 .upload {
   display: inline-block;
   width: fit-content;  /* prevent capture of clicks outside button */
+}
+
+details[open] summary ~ * {
+  animation: sweep 0.5s ease-in-out;
+}
+
+@keyframes sweep {
+  0%    {opacity: 0; transform: translateX(-10px)}
+  100%  {opacity: 1; transform: translateX(0)}
+}
+
+
+#loading-output-1, #loading-output-2 {
+  color: red;
+}
+.status_message {
+  color: red;
+}
+html, body {
+  height: 100%;
+}
+#progress_container {
+  position: fixed;
+  display: block;
+  left: 50%;
+  top: 50%;
+  z-index: 1000;
+  /*-webkit-transform: translate(-50%, -50%);*/
+  transform: translate(-50%, -50%);
 }
