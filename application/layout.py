@@ -37,8 +37,8 @@ def get_layout():
                                 dcc.Dropdown(
                                     id='data-selector',
                                     options={
-                                        'visual': 'scMNC Mouse Visual Cortex',
                                         'motor': 'scMNC Mouse Motor Cortex',
+                                        'visual': 'scMNC Mouse Visual Cortex',
                                         'upload': 'Upload your data!'
                                     },
                                     value=''
