@@ -67,6 +67,9 @@ a:hover {
   margin-top: 5px;
 }
 
+.component_input {
+  width: 50px;
+}
 
 /*.upload-block div {*/
 /*  display: inline-block;*/

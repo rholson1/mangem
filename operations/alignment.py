@@ -64,3 +64,46 @@ def manifold_nonlinear(X, Y, num_dims, Wx, Wy, mu=0.9, eps=1e-8, eig_method=None
     corr = np.eye(len(X))  # X and Y are perfectly correlated
     L = _manifold_setup(Wx, Wy, corr, mu)
     return _manifold_decompose(L, X.shape[0], Y.shape[0], num_dims, eps, eig_method=eig_method, eig_count=eig_count)
+
+
+
+#
+# From https://github.com/rsinghlab/SCOT/blob/master/src/evals.py
+# Author: Ritambhara Singh, Pinar Demetci, Rebecca Santorella
+# 19 February 2020
+#
+
+
+def calc_frac_idx(x1_mat, x2_mat):
+    """
+    Returns fraction closer than true match for each sample (as an array)
+    """
+    fracs = []
+    x = []
+    nsamp = x1_mat.shape[0]
+    rank = 0
+    for row_idx in range(nsamp):
+        euc_dist = np.sqrt(np.sum(np.square(np.subtract(x1_mat[row_idx, :], x2_mat)), axis=1))
+        true_nbr = euc_dist[row_idx]
+        sort_euc_dist = sorted(euc_dist)
+        rank = sort_euc_dist.index(true_nbr)
+        frac = float(rank) / (nsamp - 1)
+
+        fracs.append(frac)
+        x.append(row_idx + 1)
+
+    return fracs, x
+
+
+def calc_domainAveraged_FOSCTTM(x1_mat, x2_mat):
+    """
+    Outputs average FOSCTTM measure (averaged over both domains)
+    Get the fraction matched for all data points in both directions
+    Averages the fractions in both directions for each data point
+    """
+    fracs1, xs = calc_frac_idx(x1_mat, x2_mat)
+    fracs2, xs = calc_frac_idx(x2_mat, x1_mat)
+    fracs = []
+    for i in range(len(fracs1)):
+        fracs.append((fracs1[i] + fracs2[i]) / 2)
+    return fracs

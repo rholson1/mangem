@@ -2,7 +2,7 @@ from dash import html, dcc
 import plotly.graph_objects as go
 import uuid
 
-color_types = {'ttype': 't-type', 'gmm_cluster': 'Cluster'}
+color_types = {'ttype': 't-type', 'cluster': 'Cluster'}
 
 
 def get_layout():
@@ -16,9 +16,9 @@ def get_layout():
         html.H1(children='BRAIN - Multimodal Alignment'),
 
 
-        html.Div(children='''
-        Demonstration of plotting aligned data in latent space (first three dimensions).
-    '''),
+    #     html.Div(children='''
+    #     Demonstration of plotting aligned data in latent space (first three dimensions).
+    # '''),
 
         html.Div(
             id='main-block',
@@ -82,6 +82,29 @@ def get_layout():
                                         ),
                                     ]
                                 ),
+                                html.H4('Preprocessing'),
+                                html.Label([
+                                    'Dataset 1: ',
+                                    dcc.Dropdown(
+                                        id='preprocess_1',
+                                        options={
+                                            'scale': 'Scale (X-μ)/σ',
+                                            'log': 'Log'
+                                        },
+                                        value='scale'
+                                    )
+                                ]),
+                                html.Label([
+                                    'Dataset 2: ',
+                                    dcc.Dropdown(
+                                        id='preprocess_2',
+                                        options={
+                                            'scale': 'Scale (X-μ)/σ',
+                                            'log': 'Log'
+                                        },
+                                        value='log'
+                                    )
+                                ]),
 
                             ]
                         ),
@@ -116,8 +139,24 @@ def get_layout():
                                                 dcc.Input(id='eig-count', value='5', style={'width': '20px'}),
                                             ]),
                                         ]),
-                                        html.Button('Identify Clusters', id='btn-cluster'),
-
+                                    ]),
+                                    html.Button('Identify Clusters', id='btn-cluster'),
+                                    html.Details([
+                                        html.Summary('Clustering parameters'),
+                                        html.Div([
+                                            html.Label(
+                                                children=[
+                                                    'clustering method: ',
+                                                    dcc.RadioItems(
+                                                        id='clustering-method',
+                                                        options={
+                                                            'gmm': 'GMM',
+                                                        },
+                                                        value='gmm'
+                                                    ),
+                                                ]
+                                            ),
+                                        ]),
                                     ]),
                                     html.Div(id='progress_container', children=[
                                         dcc.Loading(id='loading-1', children=html.Div(id='loading-output-1') ),
@@ -138,6 +177,7 @@ def get_layout():
                                         id='plot-type',
                                         options={
                                             'alignment': 'Dataset alignment',
+                                            'alignment-error': 'Alignment error',
                                             'separate2': 'Separate 2-D plots',
                                             'separate3': 'Separate 3-D plots',
                                             'bibiplot': 'Bibiplot'
@@ -149,8 +189,32 @@ def get_layout():
                                     dcc.RadioItems(
                                         id='color-type',
                                         options=color_types,
-                                        value='ttype'
+                                        value='cluster'
                                     ),
+                                    html.H4('Component Selection', title='Select components of the aligned datasets to be plotted .'),
+                                    #html.Dialog()
+                                    html.Label([' X: ',
+                                                dcc.Input(id='component_x',
+                                                          type='number',
+                                                          min='1',
+                                                          step='1',
+                                                          value='1',
+                                                          className='component_input')]),
+                                    html.Label([' Y: ',
+                                                dcc.Input(id='component_y',
+                                                          type='number',
+                                                          min='1',
+                                                          step='1',
+                                                          value='2',
+                                                          className='component_input')]),
+                                    html.Label([' Z: ',
+                                                dcc.Input(id='component_z',
+                                                          type='number',
+                                                          min='1',
+                                                          step='1',
+                                                          value='3',
+                                                          className='component_input')])
+
                                 ])
                             ]
                         )
@@ -165,6 +229,7 @@ def get_layout():
                             children=[
                                 dcc.Graph(
                                     id='graph-combined',
+                                    mathjax=True,
                                     figure=go.Figure(),
                                     style={'height': '600px', 'width': '600px'}
                                 ),

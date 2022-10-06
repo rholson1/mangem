@@ -10,7 +10,87 @@ def plot_id(r, c):
     return 2 * (r - 1) + c
 
 
-def create_bibiplot(d1, d2):
+def create_bibiplot1x2(d1, d2, x_col, y_col):
+    """
+    Create 1x2 bibiplot
+    :param d1:
+    :param d2:
+    :param x_col:
+    :param y_col:
+    :return:
+    """
+
+    titles = ('Transcriptomic space', 'Electrophysiological space')
+
+
+    fig = make_subplots(rows=1, cols=2,
+                        column_titles=titles,
+                        shared_xaxes=True,
+                        shared_yaxes=True)
+
+    unit = 1  # radius of circle
+
+    # Select only the columns that will be plotted
+    d1 = d1[:, [x_col, y_col]]
+    d2 = d2[:, [x_col, y_col]]
+
+    # Scale to be contained within the unit circle
+    for i in range(2):
+        d1[:, i] = d1[:, i] / np.max(np.abs(d1[:, i])) * 0.707
+        d2[:, i] = d2[:, i] / np.max(np.abs(d2[:, i])) * 0.707
+
+
+    # Scatter plots
+    for r in [1]:
+        c = 1
+        fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
+                                 marker={'size': 2},
+                                 xaxis=f'x{plot_id(r, c)}',
+                                 yaxis=f'y{plot_id(r, c)}',
+                                 showlegend=False),
+                      row=r, col=c)
+        c = 2
+        fig.add_trace(go.Scatter(x=d2[:, 0], y=d2[:, 1], mode='markers',
+                                 marker={'size': 2},
+                                 xaxis=f'x{plot_id(r, c)}',
+                                 yaxis=f'y{plot_id(r, c)}',
+                                 showlegend=False),
+                      row=r, col=c)
+
+    # Circles
+    for r in [0]:
+        for c in [0, 1]:
+            fig.add_shape(type='circle',
+                          line={'color': 'Black', 'width': 1},
+                          #line_color="Black",
+                          xref='x', yref='y',
+                          x0=-unit, y0=-unit, x1=unit, y1=unit,
+                          row=r, col=c)
+
+    # Axis labels, etc
+    for r in [1]:
+        c = 1
+        fig.update_yaxes(title_text=f'y', row=r, col=c,
+                         scaleanchor=f'x{plot_id(r, c)}', scaleratio=1,
+                         showticklabels=False)
+        c = 2
+        fig.update_yaxes(scaleanchor=f'x{plot_id(r, c)}', scaleratio=1, row=r, col=c,
+                         showticklabels=False)
+    for c in [1, 2]:
+        fig.update_xaxes(title_text=f'x', row=1, col=c,
+                         showticklabels=False)
+        fig.update_xaxes(row=1, col=c,
+                         showticklabels=False)
+
+    # This appears to link x and y axes so both plots have same level of pan/zoom
+    fig.update_xaxes(matches='x')
+    fig.update_yaxes(matches='y')
+
+
+    return fig
+
+
+def create_bibiplot2x2(d1, d2):
     """
     1. plot component 1 against component 2 and component 3 for modality 1 and modality 2
     2. color by cluster (or t-type) eventually
