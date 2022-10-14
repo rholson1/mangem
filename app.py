@@ -4,10 +4,6 @@ from flask_caching import Cache
 from application import layout
 from application.callbacks import register_callbacks
 
-import os
-os.environ[ 'NUMBA_CACHE_DIR' ] = '/tmp/'
-
-
 app = Dash(__name__)
 app.title = 'Multimodal Alignment'
 server = app.server
