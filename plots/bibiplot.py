@@ -3,22 +3,55 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import scipy
+import plotly.express as px
 
+color_types = {'ttype': 't-type', 'cluster': 'Cluster'}
 
 def plot_id(r, c):
     """ Compute a unique 1-based index for each plot based on its 1-based row and column"""
     return 2 * (r - 1) + c
 
 
-def create_bibiplot1x2(d1, d2, x_col, y_col):
+def create_bibiplot1x2(d1, d2, x_col, y_col, dataset, color):
     """
     Create 1x2 bibiplot
-    :param d1:
-    :param d2:
-    :param x_col:
-    :param y_col:
+    :param d1: projection of dataset1 into latent space
+    :param d2: projection of dataset2 into latent space
+    :param x_col: latent space component used as the x plotting dimension
+    :param y_col: latent space component used as the y plotting dimension
     :return:
     """
+
+
+    # from bibiplot_motor.ipynb
+    geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
+    geneExpr = pd.DataFrame(geneExpr, dtype='int')
+    count = scipy.sparse.csr_matrix(geneExpr).T  # transpose to put cells in rows, genes in columns
+    seqDepth = np.sum(count, axis=1)  # sum gene enrichments across columns
+    seqDepth = np.array(seqDepth)  # convert from matrix to vector
+    X = np.log10(count / seqDepth * np.median(seqDepth) + 1)  # normalize  (not clear that multiplying by the median adds much value)
+    X = np.array(X)
+    X = X - X.mean(axis=0)
+    X = X / np.std(X, axis=0)
+
+    labels_X = geneExpr.index.array  # gene names
+
+    ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+    ephysY_name = ephysY.columns.tolist()
+
+    Y = ephysY.to_numpy() - np.mean(ephysY.to_numpy(), axis=0)
+    Y = Y / np.std(Y, axis=0)
+    labels_Y = ephysY_name
+
+    Zx = d1[:, (x_col, y_col)]
+    Zx = Zx / np.std(Zx, axis=0)
+
+    Zy = d2[:, (x_col, y_col)]
+    Zy = Zy / np.std(Zy, axis=0)
+
+    Rho_x = np.corrcoef(np.concatenate((Zx, X), axis=1), rowvar=False)[2:, :2]
+    Rho_y = np.corrcoef(np.concatenate((Zy, Y), axis=1), rowvar=False)[2:, :2]
+
 
     titles = ('Transcriptomic space', 'Electrophysiological space')
 
@@ -39,23 +72,55 @@ def create_bibiplot1x2(d1, d2, x_col, y_col):
         d1[:, i] = d1[:, i] / np.max(np.abs(d1[:, i])) * 0.707
         d2[:, i] = d2[:, i] / np.max(np.abs(d2[:, i])) * 0.707
 
+    # Convert category to a color code
+    categories = sorted(list(set(color)))
+    color_dict = {category: px.colors.qualitative.Plotly[i] for i, category in enumerate(categories)}
+    #colors = [color_dict[c] for c in color]
 
     # Scatter plots
     for r in [1]:
-        c = 1
-        fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
-                                 marker={'size': 2},
-                                 xaxis=f'x{plot_id(r, c)}',
-                                 yaxis=f'y{plot_id(r, c)}',
-                                 showlegend=False),
-                      row=r, col=c)
-        c = 2
-        fig.add_trace(go.Scatter(x=d2[:, 0], y=d2[:, 1], mode='markers',
-                                 marker={'size': 2},
-                                 xaxis=f'x{plot_id(r, c)}',
-                                 yaxis=f'y{plot_id(r, c)}',
-                                 showlegend=False),
-                      row=r, col=c)
+        for category in categories:
+            subset = list(color == category)
+            c = 1
+            fig.add_trace(go.Scatter(x=d1[subset, 0], y=d1[subset, 1], mode='markers',
+                                     marker={'size': 2, 'color': color_dict[category]},
+                                     xaxis=f'x{plot_id(r, c)}',
+                                     yaxis=f'y{plot_id(r, c)}',
+                                     showlegend=False,
+                                     hoverinfo="none",
+                                     name=category
+                                     ),
+                          row=r, col=c)
+            c = 2
+            fig.add_trace(go.Scatter(x=d2[subset, 0], y=d2[subset, 1], mode='markers',
+                                     marker={'size': 2, 'color': color_dict[category]},
+                                     xaxis=f'x{plot_id(r, c)}',
+                                     yaxis=f'y{plot_id(r, c)}',
+                                     showlegend=True,
+                                     hoverinfo="none",
+                                     name=category
+                                     ),
+                          row=r, col=c)
+
+
+
+        # c = 1
+        # fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
+        #                          marker={'size': 2, 'color': colors},
+        #                          xaxis=f'x{plot_id(r, c)}',
+        #                          yaxis=f'y{plot_id(r, c)}',
+        #                          showlegend=False,
+        #                          hoverinfo="none"
+        #                          ),
+        #               row=r, col=c)
+        # c = 2
+        # fig.add_trace(go.Scatter(x=d2[:, 0], y=d2[:, 1], mode='markers',
+        #                          marker={'size': 2, 'color': colors},
+        #                          xaxis=f'x{plot_id(r, c)}',
+        #                          yaxis=f'y{plot_id(r, c)}',
+        #                          showlegend=False,
+        #                          hoverinfo="none"),
+        #               row=r, col=c)
 
     # Circles
     for r in [0]:
@@ -67,17 +132,40 @@ def create_bibiplot1x2(d1, d2, x_col, y_col):
                           x0=-unit, y0=-unit, x1=unit, y1=unit,
                           row=r, col=c)
 
+
+    # Lines (correlations between genes/features and the latent space)
+    for c, (Z, F, labels, Rho) in enumerate(zip([Zx, Zy], [X, Y], [labels_X, labels_Y], [Rho_x, Rho_y])):
+        sig_idx = []
+        for i in range(F.shape[1]):
+            if np.sqrt(np.sum(Rho[i,:]**2)) > .6:
+                sig_idx.append(i)
+                fig.add_shape(type='line',
+                              xref='x', yref='y',
+                              row=1, col=c + 1,
+                              x0=0, y0=0,
+                              x1=Rho[i, 0], y1=Rho[i, 1],
+                              line={'color': 'black', 'width': 1})
+        # Add labels to lines
+        fig.add_trace(go.Scatter(
+            x=Rho[sig_idx, 0], y=Rho[sig_idx, 1],
+            text=np.array(labels)[sig_idx],
+            mode='text',
+            showlegend=False,
+            hovertemplate='%{text}<extra></extra>'
+        ),
+        row=1, col=c + 1)
+
     # Axis labels, etc
     for r in [1]:
         c = 1
-        fig.update_yaxes(title_text=f'y', row=r, col=c,
+        fig.update_yaxes(title_text=f'Component {y_col + 1}', row=r, col=c,
                          scaleanchor=f'x{plot_id(r, c)}', scaleratio=1,
                          showticklabels=False)
         c = 2
         fig.update_yaxes(scaleanchor=f'x{plot_id(r, c)}', scaleratio=1, row=r, col=c,
                          showticklabels=False)
     for c in [1, 2]:
-        fig.update_xaxes(title_text=f'x', row=1, col=c,
+        fig.update_xaxes(title_text=f'Component {x_col + 1}', row=1, col=c,
                          showticklabels=False)
         fig.update_xaxes(row=1, col=c,
                          showticklabels=False)
@@ -86,6 +174,8 @@ def create_bibiplot1x2(d1, d2, x_col, y_col):
     fig.update_xaxes(matches='x')
     fig.update_yaxes(matches='y')
 
+    fig.update_layout(plot_bgcolor='white',
+                      legend={'itemsizing': 'constant', 'title': color_types[color.name]})
 
     return fig
 

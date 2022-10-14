@@ -84,23 +84,23 @@ def get_layout():
                                 ),
                                 html.H4('Preprocessing'),
                                 html.Label([
-                                    'Dataset 1: ',
+                                    'Electrophys: ',
                                     dcc.Dropdown(
                                         id='preprocess_1',
                                         options={
-                                            'scale': 'Scale (X-μ)/σ',
-                                            'log': 'Log'
+                                            'scale': 'Standardize',
+                                            'log': 'Log transform'
                                         },
                                         value='scale'
                                     )
                                 ]),
                                 html.Label([
-                                    'Dataset 2: ',
+                                    'Gene Expression: ',
                                     dcc.Dropdown(
                                         id='preprocess_2',
                                         options={
-                                            'scale': 'Scale (X-μ)/σ',
-                                            'log': 'Log'
+                                            'scale': 'Standardize',
+                                            'log': 'Log transform'
                                         },
                                         value='log'
                                     )
@@ -180,7 +180,8 @@ def get_layout():
                                             'alignment-error': 'Alignment error',
                                             'separate2': 'Separate 2-D plots',
                                             'separate3': 'Separate 3-D plots',
-                                            'bibiplot': 'Bibiplot'
+                                            'bibiplot': 'Bibiplot',
+                                            'heatmap': 'Gene enrichment by cluster'
                                         },
                                         value='alignment'
                                     ),
@@ -234,7 +235,8 @@ def get_layout():
                                     style={'height': '600px', 'width': '600px'}
                                 ),
                             ]
-                        )
+                        ),
+                        html.P(id='graph_legend', children='')
 
                     ]
                 )

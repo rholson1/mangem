@@ -1,4 +1,5 @@
 from dash import Dash, html, dcc, Output, Input, State, MATCH, ctx
+from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -8,7 +9,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import scale
 
-from plots import create_bibiplot1x2, create_alignment_plot, scatter2d, scatter3d, plot_alignment_error, plot_alignment
+from plots import *
 from operations.alignment import nonlinear_manifold_alignment
 from operations.clustering import cluster_gmm
 from operations.preprocessing import preprocess
@@ -47,6 +48,7 @@ def register_callbacks(app, cache):
     @app.callback(
         Output(component_id='graph-combined', component_property='figure'),
         Output('graph-combined', 'style'),
+        Output('graph_legend', 'children'),
         Input('session_id', 'data'),
         Input(component_id='plot-type', component_property='value'),
         Input(component_id='color-type', component_property='value'),
@@ -54,13 +56,23 @@ def register_callbacks(app, cache):
         Input('component_y', 'value'),
         Input('component_z', 'value'),
         Input('store-aligned', 'data'),
+        Input('graph-combined', 'relayoutData'),
         State('data-selector', 'value'),
         prevent_initial_call=True
     )
-    def update_plot(session_id, plot_type, color_type, x, y, z, last_aligned, dataset):
+    def update_plot(session_id, plot_type, color_type, x, y, z, last_aligned, relayoutData, dataset):
         """Display visualization based on available data and selected visualization options
         """
-        # read aligned data files.
+
+        # Don't regenerate plot on relayoutData events unless 3-D separate plots (where using to synchronize cameras)
+        if 'graph-combined.relayoutData' in ctx.triggered_prop_ids:
+            if plot_type != 'separate3':
+                raise PreventUpdate
+
+        # get from state variables; hard-coded for now
+        label_1 = 'Electrophys'
+        label_2 = 'Gene Expression'
+
 
         # Convert component numbers to integers and make 0-based instead of 1-based
         x = int(x) - 1
@@ -68,7 +80,7 @@ def register_callbacks(app, cache):
         z = int(z) - 1
 
         if dataset not in ('visual', 'motor'):
-            return go.Figure()
+            return go.Figure(), {}, ''
 
         if False:
             efeatures_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_NMA.csv')
@@ -94,37 +106,59 @@ def register_callbacks(app, cache):
             #Xe = np.array(pd.read_json(cache.get(f'{session_id}-aligned_1')))
             #Xg = np.array(pd.read_json(cache.get(f'{session_id}-aligned_2')))
         else:
-            return go.Figure(), {}
+            return go.Figure(), {}, ''
 
 
         style = {}  # default
+        legend = ''
         if plot_type == 'alignment':
             #fig = create_alignment_plot(Xe, Xg, dataset, x, y, z)
             fig = plot_alignment(Xe, Xg, dataset, x, y, z)
             style = {'height': '600px', 'width': '1000px'}
+            legend = f"""{label_1} and {label_2} are projected to dimensions {x+1}, {y+1}, and {z+1} of the 
+            latent space."""
 
         elif plot_type == 'alignment-error':
             fig = plot_alignment_error(Xe, Xg, dataset)
             style = {'height': '600px', 'width': '1000px'}
+            legend = f"""Alignment error between the projections of {label_1} and {label_2} into the
+            latent space.  Pairwise cell distance is the Euclidean distance between latent space projections
+             for a single cell.  Fraction of Samples Closer Than True Match (FOSCTTM)..."""
 
         elif plot_type == 'separate2':
             fig = scatter2d(efeatures_NMA, geneExp_NMA, x, y, color_type)
             style = {'height': '600px', 'width': '1000px'}
+            legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1} and {y+1}
+            of the latent space."""
 
         elif plot_type == 'separate3':
-            fig = scatter3d(efeatures_NMA, geneExp_NMA, x, y, z, color_type)
+            fig = scatter3d(efeatures_NMA, geneExp_NMA, x, y, z, color_type, relayoutData)
             style = {'height': '600px', 'width': '1000px'}
+            legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1}, {y+1}, and {z+1}
+            of the latent space."""
 
         elif plot_type == 'bibiplot':
-            fig = create_bibiplot1x2(Xg, Xe, x, y)
+            color_vec = efeatures_NMA[color_type]
+            fig = create_bibiplot1x2(Xg, Xe, x, y, dataset, color_vec)
             style = {'height': '600px', 'width': '1000px'}
+            legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
+            Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
+            where the length is the value of correlation (max value 1). """
+
+        elif plot_type == 'heatmap':
+            # gene enrichment by cluster
+
+            fig = create_heatmap(dataset, geneExp_NMA)
+            legend = f"""The gene expression levels across all cells for the top 10 differentially-expressed genes
+            for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized gene
+            expression ranked using the Wilcox Rank Sum test."""
 
         else:
             # No plot type specified - show a blank plot
             fig = go.Figure().update_layout()
             #style = {'height': '0', 'width': '0'}
 
-        return fig, style
+        return fig, style, legend
 
     @app.callback(
         Output(component_id='loading-output-1', component_property='children'),
@@ -154,40 +188,33 @@ def register_callbacks(app, cache):
             aligned_1 = np.array(df_1.drop(columns=['ttype', 'cluster']))
             aligned_2 = np.array(df_2.drop(columns=['ttype', 'cluster']))
         else:
-
             # perform dataset alignment and clustering
-
             if dataset in ('motor', 'visual'):
-                # use precomputed mouse cortex data
-                pass
+                # use mouse cortex data
+
+                # Load mouse data and clean based on prior knowledge of structure.
+                df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+                # drop the first column if it contains strings
+                if type(df_1.iloc[1, 0]) == str:
+                    X1 = np.array(df_1.iloc[:, 1:], dtype=float)
+                else:
+                    X1 = np.array(df_1, dtype=float)
+
+                df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', header=0).T
+                X2 = np.array(df_2[1:], dtype=float)  # skip gene row
+
+                # Load metadata files containing ttype column
+                ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')['ttype']
             else:
                 # use uploaded data, if any
                 return 'select mouse data for now', str(time.time())
 
-            # Load mouse data and clean based on prior knowledge of structure.
-            df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
-            # drop the first column if it contains strings
-            if type(df_1.iloc[1, 0]) == str:
-                Xe = np.array(df_1.iloc[:, 1:], dtype=float)
-            else:
-                Xe = np.array(df_1, dtype=float)
-
-            df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', header=0).T
-            Xg = np.array(df_2[1:], dtype=float)  # skip gene row
-
-            # Load metadata files containing ttype column
-            ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')['ttype']
-
-
-
-
-
             # Apply selected preprocessing to raw datasets
-            Xe = preprocess(Xe, preprocess_1)
-            Xg = preprocess(Xg, preprocess_2)
+            X1 = preprocess(X1, preprocess_1)
+            X2 = preprocess(X2, preprocess_2)
 
             # Align datasets
-            proj, _ = nonlinear_manifold_alignment(Xe, Xg, 20, eig_method=eig_method, eig_count=int(eig_count))
+            proj, _ = nonlinear_manifold_alignment(X1, X2, 20, eig_method=eig_method, eig_count=int(eig_count))
             aligned_1, aligned_2 = proj
 
         # Identify clusters (generalize later with clustering parameters, alternate methods)
@@ -204,6 +231,10 @@ def register_callbacks(app, cache):
         # Store aligned and annotated data in cache
         cache.set(f'{session_id}-aligned_1', aligned_1.to_json())
         cache.set(f'{session_id}-aligned_2', aligned_2.to_json())
+
+        # Store
+
+
         return '', str(time.time())
 
 
@@ -214,6 +245,22 @@ def register_callbacks(app, cache):
     )
     def set_max_component(eig_count):
         return eig_count, eig_count
+
+    @app.callback(
+        Output('plot-type', 'value'),
+        Input('btn-align', 'n_clicks'),
+        Input('btn-cluster', 'n_clicks')
+    )
+    def switch_visualization(align_clicks, cluster_clicks):
+        """Change to the appropriate default visualization when clicking alignment or
+        clustering button"""
+
+        if ctx.triggered_id == 'btn-align':
+            return 'alignment'
+        elif ctx.triggered_id == 'btn-cluster':
+            return 'separate2'
+        else:
+            raise PreventUpdate
 
     # @app.callback(
     #     Output(component_id='loading-output-2', component_property='children'),

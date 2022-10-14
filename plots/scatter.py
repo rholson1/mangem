@@ -45,12 +45,16 @@ def scatter2d(df1, df2, x, y, color_type):
         fig.add_trace(fig_e.data[0], row=1, col=1)
         fig.add_trace(fig_g.data[0], row=1, col=2)
 
+    # This appears to link x and y axes so both plots have same level of pan/zoom
+    fig.update_xaxes(matches='x')
+    fig.update_yaxes(matches='y')
+
     fig.update_layout(title_text=f'2D projections in latent space')
 
     return fig
 
 
-def scatter3d(df1, df2, x, y, z, color_type):
+def scatter3d(df1, df2, x, y, z, color_type, relayoutData):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
@@ -58,7 +62,8 @@ def scatter3d(df1, df2, x, y, z, color_type):
     :param x: column number for x-coordinate
     :param y: column number for y-coordinate
     :param z: column number for z-coordinate
-    :param color: column name for color
+    :param color_type: column name for color
+    :param relayoutData: relayoutData from figure
     :return:
     """
 
@@ -94,6 +99,15 @@ def scatter3d(df1, df2, x, y, z, color_type):
 
         fig.add_trace(fig_e.data[0], row=1, col=1)
         fig.add_trace(fig_g.data[0], row=1, col=2)
+
+    # synchronize zoom/rotation of plots
+    camera = None
+    if 'scene.camera' in relayoutData:
+        camera = relayoutData['scene.camera']
+    elif 'scene2.camera' in relayoutData:
+        camera = relayoutData['scene2.camera']
+    if camera:
+        fig.update_layout(scene_camera=camera, scene2_camera=camera)
 
     fig.update_layout(title_text=f'3D projections in latent space')
 
