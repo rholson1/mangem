@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
+from application.settings import color_types
 
-color_types = {'ttype': 't-type', 'cluster': 'Cluster'}
 
 def plot_id(r, c):
     """ Compute a unique 1-based index for each plot based on its 1-based row and column"""
@@ -37,6 +37,10 @@ def create_bibiplot1x2(d1, d2, x_col, y_col, dataset, color):
     labels_X = geneExpr.index.array  # gene names
 
     ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+    if type(ephysY.iloc[0, 0]) == str:
+        # drop the first column if it contains strings (i.e., presumably cell names)
+        ephysY.drop(columns=ephysY.columns[0], inplace=True)
+
     ephysY_name = ephysY.columns.tolist()
 
     Y = ephysY.to_numpy() - np.mean(ephysY.to_numpy(), axis=0)
@@ -134,7 +138,9 @@ def create_bibiplot1x2(d1, d2, x_col, y_col, dataset, color):
 
 
     # Lines (correlations between genes/features and the latent space)
+    label_y_offset = 8  # pixels
     for c, (Z, F, labels, Rho) in enumerate(zip([Zx, Zy], [X, Y], [labels_X, labels_Y], [Rho_x, Rho_y])):
+        labels = np.array(labels)
         sig_idx = []
         for i in range(F.shape[1]):
             if np.sqrt(np.sum(Rho[i,:]**2)) > .6:
@@ -145,30 +151,39 @@ def create_bibiplot1x2(d1, d2, x_col, y_col, dataset, color):
                               x0=0, y0=0,
                               x1=Rho[i, 0], y1=Rho[i, 1],
                               line={'color': 'black', 'width': 1})
+
+                fig.add_annotation(x=Rho[i, 0],
+                                   y=Rho[i, 1],
+                                   yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
+                                   text=labels[i],
+                                   showarrow=False,
+                                   row=1, col=c + 1)
+
         # Add labels to lines
-        fig.add_trace(go.Scatter(
-            x=Rho[sig_idx, 0], y=Rho[sig_idx, 1],
-            text=np.array(labels)[sig_idx],
-            mode='text',
-            showlegend=False,
-            hovertemplate='%{text}<extra></extra>'
-        ),
-        row=1, col=c + 1)
+        if False:
+            fig.add_trace(go.Scatter(
+                x=Rho[sig_idx, 0], y=Rho[sig_idx, 1],
+                text=np.array(labels)[sig_idx],
+                mode='text',
+                showlegend=False,
+                hovertemplate='%{text}<extra></extra>'
+            ),
+            row=1, col=c + 1)
 
     # Axis labels, etc
     for r in [1]:
         c = 1
         fig.update_yaxes(title_text=f'Component {y_col + 1}', row=r, col=c,
                          scaleanchor=f'x{plot_id(r, c)}', scaleratio=1,
-                         showticklabels=False)
+                         showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
         c = 2
         fig.update_yaxes(scaleanchor=f'x{plot_id(r, c)}', scaleratio=1, row=r, col=c,
-                         showticklabels=False)
+                         showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
     for c in [1, 2]:
         fig.update_xaxes(title_text=f'Component {x_col + 1}', row=1, col=c,
-                         showticklabels=False)
+                         showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
         fig.update_xaxes(row=1, col=c,
-                         showticklabels=False)
+                         showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
 
     # This appears to link x and y axes so both plots have same level of pan/zoom
     fig.update_xaxes(matches='x')

@@ -88,6 +88,7 @@ def create_heatmap(dataset, geneExp_NMA):
     fig.update_xaxes(showticklabels=False, row=2, col=1)
     fig.update_yaxes(autorange='reversed', row=2, col=1)
 
+    fig.update_xaxes(matches='x')  # this changes the behavior after bibiplot
 
     fig.update_layout(title_text=f'Gene Enrichment by Cluster: Mouse {dataset.title()} Cortex')
 

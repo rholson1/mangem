@@ -1,10 +1,10 @@
 from dash import Dash
 from flask_caching import Cache
-
+import dash_bootstrap_components as dbc
 from application import layout
 from application.callbacks import register_callbacks
 
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME])
 app.title = 'Multimodal Alignment'
 server = app.server
 

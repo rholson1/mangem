@@ -1,8 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-
-color_types = {'ttype': 't-type', 'cluster': 'Cluster'}
+from application.settings import color_types
 
 
 def scatter2d(df1, df2, x, y, color_type):

@@ -1,16 +1,100 @@
+/* UW colors from https://brand.wisc.edu/web/colors/  */
+:root, [data-theme="default"] {
+  --color-primary: #c5050c;
+  --color-accent: #9b0000;
+  --color-bg: #f7f7f7;
+  --color-bg-accent: #dadfe1;
+  --color-body-font: #494949;
+  --color-anchor: #0479a8;
+  --color-anchor-hover: #03678f;
+
+  --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+[data-theme] {
+  background-color: var(--color-bg);
+  color: var(--color-primary);
+}
+[data-theme="dark"] {
+  --color-body-font: #adadad;
+  --color-bg: #282728;
+}
+
+
+/*
+html, body {
+  height: 100%;
+}
+*/
+body{
+  background-color: var(--color-bg);
+  font-size: 10pt;
+  font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+
+  margin: 0;
+}
+
+#id_header {
+  color: var(--color-bg);
+  background-color: var(--color-primary);
+  padding: 10px 10px;
+}
 
 .hidden {
   display: none;
 }
 
 a {
-  color: #1EAEDB;
+  color: var(--color-anchor);
   text-decoration: underline;
-  cursor: pointer;}
+  cursor: pointer;
+}
 a:hover {
-  color: #0FA0CE; }
+  color: var(--color-anchor-hover);
+}
 
+button, input[type='button'] {
+  background-color: var(--color-anchor);
+  color: var(--color-bg);
+  border: 2px solid var(--color-anchor);
+}
+button:hover, input[type='button']:hover {
+  background-color: var(--color-bg);
+  color: var(--color-anchor);
+}
 
+.custom-tab-selected {
+  border-bottom: none;
+  border-top: 2px solid var(--color-accent) !important;
+}
+
+.rc-slider-rail {
+  background-color: var(--color-bg-accent);
+}
+
+.rc-slider-track {
+  background-color: var(--color-accent);
+}
+
+.rc-slider-dot {
+  border-color: var(--color-bg-accent);
+}
+.rc-slider-dot-active {
+  border-color: var(--color-accent);
+}
+
+.rc-slider-handle {
+  border-color: var(--color-accent) !important;
+}
+.rc-slider-handle:hover {
+  border-color: var(--color-primary) !important;
+}
+.rc-slider-mark-text{
+  color: var(--color-body-font);
+}
+.rc-slider-mark-text-active {
+  color: var(--color-body-font);
+}
 .upload-button {
   width: 60%;
   height: 10px;
@@ -32,13 +116,26 @@ a:hover {
   flex: 1;
   margin: 10px;
   padding: 10px;
-  background-color: white;
+  border: 1px solid var(--color-bg-accent);
+  background-color: var(--color-bg);
+  /*box-shadow: 10px 10px 3px lightgray;*/
 }
 
 #right-panel {
   flex: 3;
 }
 
+#graph_legend {
+  width: 1000px;
+}
+
+.operations-button {
+  width: 100%;
+  height: 34px;
+}
+
+
+/*
 .block-title {
   position: relative;
   margin: 0;
@@ -55,10 +152,7 @@ a:hover {
   padding: 0 10px 10px 10px;
 }
 
-#operations-block button {
-  display: block;
-  margin-right: 10px;
-}
+
 #operations-block div {
   display: inline-block;
 }
@@ -66,7 +160,7 @@ a:hover {
 .upload-block {
   margin-top: 5px;
 }
-
+*/
 .component_input {
   width: 50px;
 }
@@ -92,14 +186,12 @@ details[open] summary ~ * {
 
 
 #loading-output-1, #loading-output-2 {
-  color: red;
+  color: var(--color-primary);
 }
 .status_message {
-  color: red;
+  color: var(--color-primary);
 }
-html, body {
-  height: 100%;
-}
+
 #progress_container {
   position: fixed;
   display: block;
@@ -108,4 +200,112 @@ html, body {
   z-index: 1000;
   /*-webkit-transform: translate(-50%, -50%);*/
   transform: translate(-50%, -50%);
+}
+
+/* icons */
+i {
+  padding-left: 1em;
+  color: var(--color-accent);
+}
+
+/* bootstrap tooltip */
+
+.tooltip {
+  position: absolute;
+  z-index: 1080;
+  display: block;
+  margin: 0;
+  font-family: var(--bs-font-sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  text-align: start;
+  text-decoration: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  word-break: normal;
+  word-spacing: normal;
+  white-space: normal;
+  line-break: auto;
+  font-size: 0.875rem;
+  word-wrap: break-word;
+  opacity: 0;
+}
+.tooltip.show {
+  opacity: 0.9;
+}
+.tooltip .tooltip-arrow {
+  position: absolute;
+  display: block;
+  width: 0.8rem;
+  height: 0.4rem;
+}
+.tooltip .tooltip-arrow::before {
+  position: absolute;
+  content: "";
+  border-color: transparent;
+  border-style: solid;
+}
+
+.bs-tooltip-top, .bs-tooltip-auto[data-popper-placement^=top] {
+  padding: 0.4rem 0;
+}
+.bs-tooltip-top .tooltip-arrow, .bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow {
+  bottom: 0;
+}
+.bs-tooltip-top .tooltip-arrow::before, .bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before {
+  top: -1px;
+  border-width: 0.4rem 0.4rem 0;
+  border-top-color: #000;
+}
+
+.bs-tooltip-end, .bs-tooltip-auto[data-popper-placement^=right] {
+  padding: 0 0.4rem;
+}
+.bs-tooltip-end .tooltip-arrow, .bs-tooltip-auto[data-popper-placement^=right] .tooltip-arrow {
+  left: 0;
+  width: 0.4rem;
+  height: 0.8rem;
+}
+.bs-tooltip-end .tooltip-arrow::before, .bs-tooltip-auto[data-popper-placement^=right] .tooltip-arrow::before {
+  right: -1px;
+  border-width: 0.4rem 0.4rem 0.4rem 0;
+  border-right-color: #000;
+}
+
+.bs-tooltip-bottom, .bs-tooltip-auto[data-popper-placement^=bottom] {
+  padding: 0.4rem 0;
+}
+.bs-tooltip-bottom .tooltip-arrow, .bs-tooltip-auto[data-popper-placement^=bottom] .tooltip-arrow {
+  top: 0;
+}
+.bs-tooltip-bottom .tooltip-arrow::before, .bs-tooltip-auto[data-popper-placement^=bottom] .tooltip-arrow::before {
+  bottom: -1px;
+  border-width: 0 0.4rem 0.4rem;
+  border-bottom-color: #000;
+}
+
+.bs-tooltip-start, .bs-tooltip-auto[data-popper-placement^=left] {
+  padding: 0 0.4rem;
+}
+.bs-tooltip-start .tooltip-arrow, .bs-tooltip-auto[data-popper-placement^=left] .tooltip-arrow {
+  right: 0;
+  width: 0.4rem;
+  height: 0.8rem;
+}
+.bs-tooltip-start .tooltip-arrow::before, .bs-tooltip-auto[data-popper-placement^=left] .tooltip-arrow::before {
+  left: -1px;
+  border-width: 0.4rem 0 0.4rem 0.4rem;
+  border-left-color: #000;
+}
+
+.tooltip-inner {
+  max-width: 200px;
+  padding: 0.25rem 0.5rem;
+  color: #fff;
+  text-align: left;
+  background-color: #000;
+  border-radius: 0.25rem;
 }

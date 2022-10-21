@@ -1,13 +1,9 @@
-from dash import Dash, html, dcc, Output, Input, State, MATCH, ctx
+from dash import Output, Input, State, MATCH, ctx
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-from operator import itemgetter
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import scale
 
 from plots import *
 from operations.alignment import nonlinear_manifold_alignment
@@ -15,26 +11,54 @@ from operations.clustering import cluster_gmm
 from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
 
-import time
+from application.settings import cell_limit
 
-color_types = {'ttype': 't-type', 'cluster': 'Cluster'}
+import time
 
 
 def register_callbacks(app, cache):
     @app.callback(
         Output('upload-container', 'className'),
         Output('store-data_selected', 'data'),
+        Output('upload_1_label', 'value'),
+        Output('upload_2_label', 'value'),
         Input('data-selector', 'value'),
     )
     def select_data(dataset):
         """Handle changes to the data selection dropdown
         """
-        if dataset == 'upload':
-            className = ''
-        else:
-            className = 'hidden'
-        return className, str(time.time())
+        if dataset in ('motor', 'visual'):
+            class_name = 'hidden'
+            label_1 = 'Electrophys'
+            label_2 = 'Gene Expression'
+        elif dataset == 'upload':
+            class_name = ''
+            label_1 = ''
+            label_2 = ''
+        else:  # no selection
+            class_name = 'hidden'
+            label_1 = ''
+            label_2 = ''
 
+        return class_name, str(time.time()), label_1, label_2
+
+    @app.callback(
+        Output('store-label-1', 'data'),
+        Output('store-label-2', 'data'),
+        Input('upload_1_label', 'value'),
+        Input('upload_2_label', 'value')
+    )
+    def update_label_store(label_1, label_2):
+        return label_1 or 'Modality 1', label_2 or 'Modality 2'
+
+    @app.callback(
+        Output('preprocess-label-1', 'children'),
+        Output('preprocess-label-2', 'children'),
+        Input('store-label-1', 'data'),
+        Input('store-label-2', 'data')
+    )
+    def update_preprocessing_labels(label_1, label_2):
+        return label_1, label_2
 
     @app.callback(
         Output({'type': 'dynamic-output', 'index': MATCH}, 'children'),
@@ -158,6 +182,8 @@ def register_callbacks(app, cache):
             fig = go.Figure().update_layout()
             #style = {'height': '0', 'width': '0'}
 
+        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+
         return fig, style, legend
 
     @app.callback(
@@ -169,14 +195,17 @@ def register_callbacks(app, cache):
         Input(component_id='data-selector', component_property='value'),
         State('preprocess_1', 'value'),
         State('preprocess_2', 'value'),
-        State(component_id='eig-method', component_property='value'),
-        State(component_id='eig-count', component_property='value'),
+        State('ndims', 'value'),
+        State('neighbors', 'value'),
+        State('num_clusters', 'value'),
+        # State(component_id='eig-method', component_property='value'),
+        # State(component_id='eig-count', component_property='value'),
 
         prevent_initial_call=True
     )
     def align_and_cluster_datasets(session_id, align_clicks, cluster_clicks, dataset,
                                    preprocess_1, preprocess_2,
-                                   eig_method, eig_count):
+                                   ndims, neighbors, num_clusters):
 
         # add logic for selectively processing only what has to be processed
         # (e.g., if clustering button is clicked, don't re-run alignment (which is expensive!)
@@ -207,18 +236,18 @@ def register_callbacks(app, cache):
                 ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')['ttype']
             else:
                 # use uploaded data, if any
-                return 'select mouse data for now', str(time.time())
+                return '', str(time.time())
 
             # Apply selected preprocessing to raw datasets
             X1 = preprocess(X1, preprocess_1)
             X2 = preprocess(X2, preprocess_2)
 
             # Align datasets
-            proj, _ = nonlinear_manifold_alignment(X1, X2, 20, eig_method=eig_method, eig_count=int(eig_count))
+            proj, _ = nonlinear_manifold_alignment(X1, X2, int(ndims), int(neighbors)) #, eig_method=eig_method, eig_count=int(eig_count))
             aligned_1, aligned_2 = proj
 
         # Identify clusters (generalize later with clustering parameters, alternate methods)
-        clusters = cluster_gmm(aligned_1, aligned_2)
+        clusters = cluster_gmm(aligned_1, aligned_2, num_clusters)
 
         # Append cluster, t_type info to aligned data in a Pandas dataframe
         aligned_1 = pd.DataFrame(aligned_1)
@@ -241,10 +270,10 @@ def register_callbacks(app, cache):
     @app.callback(
         Output('component_x', 'max'),
         Output('component_y', 'max'),
-        Input('eig-count', 'value')
+        Input('ndims', 'value')
     )
-    def set_max_component(eig_count):
-        return eig_count, eig_count
+    def set_max_component(ndims):
+        return ndims, ndims
 
     @app.callback(
         Output('plot-type', 'value'),
