@@ -11,5 +11,5 @@ def cluster_gmm(A, B, num_clusters):
                                 )
 
     gmm = estimator.fit(np.hstack((A[:, :3], B[:, :3])))
-    labels = gmm.predict(np.hstack((A[:, :3], B[:, :3])))
+    labels = gmm.predict(np.hstack((A[:, :3], B[:, :3]))) + 1
     return labels

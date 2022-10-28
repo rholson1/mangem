@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
-from application.settings import color_types
+from application.constants import color_types
+from operations.preprocessing import preprocess
 
 
 def plot_id(r, c):
@@ -12,40 +13,73 @@ def plot_id(r, c):
     return 2 * (r - 1) + c
 
 
-def create_bibiplot1x2(d1, d2, x_col, y_col, dataset, color):
-    """
-    Create 1x2 bibiplot
-    :param d1: projection of dataset1 into latent space
-    :param d2: projection of dataset2 into latent space
-    :param x_col: latent space component used as the x plotting dimension
-    :param y_col: latent space component used as the y plotting dimension
-    :return:
-    """
-
-
-    # from bibiplot_motor.ipynb
-    geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
-    geneExpr = pd.DataFrame(geneExpr, dtype='int')
-    count = scipy.sparse.csr_matrix(geneExpr).T  # transpose to put cells in rows, genes in columns
-    seqDepth = np.sum(count, axis=1)  # sum gene enrichments across columns
-    seqDepth = np.array(seqDepth)  # convert from matrix to vector
-    X = np.log10(count / seqDepth * np.median(seqDepth) + 1)  # normalize  (not clear that multiplying by the median adds much value)
+def normalize_raw_df(data):
+    total = np.sum(data, axis=1)  # sum measures across columns
+    #total = np.array(total)  # convert from matrix to vector
+    X = np.log10(data / total[:, None] * np.median(total) + 1)
     X = np.array(X)
     X = X - X.mean(axis=0)
     X = X / np.std(X, axis=0)
+    return X
 
-    labels_X = geneExpr.index.array  # gene names
 
-    ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
-    if type(ephysY.iloc[0, 0]) == str:
-        # drop the first column if it contains strings (i.e., presumably cell names)
-        ephysY.drop(columns=ephysY.columns[0], inplace=True)
+def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
+                       preprocess_1, preprocess_2, label_1, label_2):
+    """
+    Create 1x2 bibiplot
+    :param data_1: raw dataset 1 (dataframe)
+    :param data_2: raw dataset 2 (dataframe)
+    :param d1: projection of dataset 1 into latent space
+    :param d2: projection of dataset 2 into latent space
+    :param x_col: latent space component used as the x plotting dimension
+    :param y_col: latent space component used as the y plotting dimension
+    :param dataset: which dataset selected by user (visual/motor/upload)
+    :param color: vector identifying groups for coloring plots
+    :param preprocess_1: user-selected preprocessing method for dataset 1
+    :param preprocess_2: user-selected preprocessing method for dataset 2
+    :param label_1: label for dataset 1
+    :param label_2: label for dataset 2
+    :return:
+    """
 
-    ephysY_name = ephysY.columns.tolist()
+    # initially, special handling for mouse datasets
 
-    Y = ephysY.to_numpy() - np.mean(ephysY.to_numpy(), axis=0)
-    Y = Y / np.std(Y, axis=0)
-    labels_Y = ephysY_name
+    if dataset in ('motor', 'visual'):
+        # from bibiplot_motor.ipynb
+        geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
+        geneExpr = pd.DataFrame(geneExpr, dtype='int')
+        count = scipy.sparse.csr_matrix(geneExpr).T  # transpose to put cells in rows, genes in columns
+        seqDepth = np.sum(count, axis=1)  # sum gene enrichments across columns
+        seqDepth = np.array(seqDepth)  # convert from matrix to vector
+        X = np.log10(count / seqDepth * np.median(seqDepth) + 1)  # normalize  (not clear that multiplying by the median adds much value)
+        X = np.array(X)
+        X = X - X.mean(axis=0)
+        X = X / np.std(X, axis=0)
+
+        labels_X = geneExpr.index.array  # gene names
+
+        ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+        if type(ephysY.iloc[0, 0]) == str:
+            # drop the first column if it contains strings (i.e., presumably cell names)
+            ephysY.drop(columns=ephysY.columns[0], inplace=True)
+        Y = ephysY.to_numpy() - np.mean(ephysY.to_numpy(), axis=0)
+        Y = Y / np.std(Y, axis=0)
+
+        labels_Y = ephysY.columns.tolist()
+    else:  # User-uploaded data
+
+        # normalize each dataset in the same way as mouse gene data
+        # X = normalize_raw_df(data_1)
+        # Y = normalize_raw_df(data_2)
+
+        #
+        labels_X = data_1.columns.tolist()
+        labels_Y = data_2.columns.tolist()
+
+        # preprocess using user-selected method
+        X = preprocess(data_1, preprocess_1)
+        Y = preprocess(data_2, preprocess_2)
+
 
     Zx = d1[:, (x_col, y_col)]
     Zx = Zx / np.std(Zx, axis=0)
@@ -56,9 +90,7 @@ def create_bibiplot1x2(d1, d2, x_col, y_col, dataset, color):
     Rho_x = np.corrcoef(np.concatenate((Zx, X), axis=1), rowvar=False)[2:, :2]
     Rho_y = np.corrcoef(np.concatenate((Zy, Y), axis=1), rowvar=False)[2:, :2]
 
-
-    titles = ('Transcriptomic space', 'Electrophysiological space')
-
+    titles = (label_1, label_2)
 
     fig = make_subplots(rows=1, cols=2,
                         column_titles=titles,
@@ -263,46 +295,3 @@ def create_bibiplot2x2(d1, d2):
 
 
     return fig
-
-
-
-def create_bibiplot_zzz(dataset):
-    efeatures_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_NMA.csv')
-    efeatures_NMA['gmm_cluster'] = efeatures_NMA['gmm_cluster'].astype('string')
-    Xe = np.array(efeatures_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
-
-    geneExp_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA.csv')
-    geneExp_NMA['gmm_cluster'] = geneExp_NMA['gmm_cluster'].astype('string')
-    Xg = np.array(geneExp_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
-
-
-
-    geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
-    geneExpr = pd.DataFrame(geneExpr, dtype='int')
-    count = scipy.sparse.csr_matrix(geneExpr).T
-
-    seqDepth = np.sum(count, axis=1)
-    seqDepth = np.array(seqDepth)
-    np.median(seqDepth)
-    X = np.log10(count/(seqDepth) * np.median(seqDepth) + 1)
-    X = np.array(X)
-    X = X - X.mean(axis=0)
-    X = X / np.std(X, axis=0)
-
-    ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv', index_col=0)
-    ephysY_name = ephysY.columns.tolist()
-
-    Y = ephysY.to_numpy() - np.mean(ephysY.to_numpy(), axis=0)
-    Y = Y / np.std(Y, axis=0)
-
-    print('Shape of X:', X.shape, '\nShape of Y:', Y.shape)
-
-
-
-
-
-
-
-
-    fig = make_subplots(rows=1, cols=2, subplot_titles=('Electrophys', 'Gene Expression'),
-                        specs=[[{'type': 'scene'}, {'type': 'scene'}]])

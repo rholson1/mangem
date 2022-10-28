@@ -132,6 +132,7 @@ button:hover, input[type='button']:hover {
 .operations-button {
   width: 100%;
   height: 34px;
+  margin: 2px;
 }
 
 
@@ -188,6 +189,11 @@ details[open] summary ~ * {
 #loading-output-1, #loading-output-2 {
   color: var(--color-primary);
 }
+/*
+.loading_trigger {
+  display: none;
+}
+*/
 .status_message {
   color: var(--color-primary);
 }

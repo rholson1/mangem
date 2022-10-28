@@ -11,7 +11,8 @@ server = app.server
 CACHE_CONFIG = {
     'CACHE_TYPE': 'FileSystemCache',
     'CACHE_DIR': 'cache_dir',
-    'CACHE_THRESHOLD': 20  # maximum number of concurrent users of the app
+    'CACHE_THRESHOLD': 100,  # maximum number of items the cache will store
+    'CACHE_DEFAULT_TIMEOUT': 7200  # Default timeout, seconds
 }
 cache = Cache()
 cache.init_app(server, config=CACHE_CONFIG)

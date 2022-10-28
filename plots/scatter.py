@@ -1,10 +1,10 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from application.settings import color_types
+from application.constants import color_types
 
 
-def scatter2d(df1, df2, x, y, color_type):
+def scatter2d(df1, df2, x, y, color_type, label_1, label_2):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
@@ -12,6 +12,8 @@ def scatter2d(df1, df2, x, y, color_type):
     :param x: column number for x-coordinate
     :param y: column number for y-coordinate
     :param color: column name for color
+    :param label_1: label for df1
+    :param label_2: label for df2
     :return:
     """
 
@@ -19,7 +21,7 @@ def scatter2d(df1, df2, x, y, color_type):
     x_name = df1.columns[x]
     y_name = df1.columns[y]
 
-    fig = make_subplots(rows=1, cols=2, subplot_titles=('Electrophys', 'Gene Expression'))
+    fig = make_subplots(rows=1, cols=2, subplot_titles=(label_1, label_2))
 
     if color_type:
         fig_e = px.scatter(df1, x=x_name, y=y_name, color=color_type)
@@ -53,7 +55,7 @@ def scatter2d(df1, df2, x, y, color_type):
     return fig
 
 
-def scatter3d(df1, df2, x, y, z, color_type, relayoutData):
+def scatter3d(df1, df2, x, y, z, color_type, relayoutData, label_1, label_2):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
@@ -63,6 +65,8 @@ def scatter3d(df1, df2, x, y, z, color_type, relayoutData):
     :param z: column number for z-coordinate
     :param color_type: column name for color
     :param relayoutData: relayoutData from figure
+    :param label_1: label for df1
+    :param label_2: label for df2
     :return:
     """
 
@@ -71,7 +75,7 @@ def scatter3d(df1, df2, x, y, z, color_type, relayoutData):
     y_name = df1.columns[y]
     z_name = df1.columns[z]
 
-    fig = make_subplots(rows=1, cols=2, subplot_titles=('Electrophys', 'Gene Expression'),
+    fig = make_subplots(rows=1, cols=2, subplot_titles=(label_1, label_2),
                         specs=[[{'type': 'scene'}, {'type': 'scene'}]])
 
     if color_type:

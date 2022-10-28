@@ -1,4 +1,4 @@
-from dash import Output, Input, State, MATCH, ctx
+from dash import Output, Input, State, MATCH, ctx, dcc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 
@@ -12,6 +12,12 @@ from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
 
 from application.settings import cell_limit
+from application.utilities import safe_filenames, cache_key
+from application.constants import UploadFileType, blank_layout
+
+import io
+import base64
+import zipfile
 
 import time
 
@@ -29,8 +35,8 @@ def register_callbacks(app, cache):
         """
         if dataset in ('motor', 'visual'):
             class_name = 'hidden'
-            label_1 = 'Electrophys'
-            label_2 = 'Gene Expression'
+            label_1 = 'Gene Expression'
+            label_2 = 'Electrophys'
         elif dataset == 'upload':
             class_name = ''
             label_1 = ''
@@ -64,16 +70,34 @@ def register_callbacks(app, cache):
         Output({'type': 'dynamic-output', 'index': MATCH}, 'children'),
         Input({'type': 'dynamic-upload', 'index': MATCH}, 'contents'),
         State({'type': 'dynamic-upload', 'index': MATCH}, 'filename'),
-        State({'type': 'dynamic-upload', 'index': MATCH}, 'last_modified')
+        State({'type': 'dynamic-upload', 'index': MATCH}, 'last_modified'),
+        State({'type': 'dynamic-upload', 'index': MATCH}, 'id'),
+        State('session_id', 'data'),
+        prevent_initial_call=True
     )
-    def handle_upload(contents, filename, last_modified):
+    def handle_upload(contents, filename, last_modified, upload_id, session_id):
+        """ Handle uploads of data files and metadata.  Return the filename (for display) and also
+        store the file in the cache."""
+
+        # Read data from file
+        content_type, content_string = contents.split(',')
+        decoded = base64.b64decode(content_string)
+        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), nrows=cell_limit)
+
+        # determine the file type based on the widget used to upload the file
+        file_type = UploadFileType(upload_id['index']).name
+
+        # store data in cache
+        key = cache_key(session_id, file_type)
+        cache.set(key, df.to_json())
+
         return filename
 
     @app.callback(
         Output(component_id='graph-combined', component_property='figure'),
         Output('graph-combined', 'style'),
         Output('graph_legend', 'children'),
-        Input('session_id', 'data'),
+        Output('loading-plot', 'children'),
         Input(component_id='plot-type', component_property='value'),
         Input(component_id='color-type', component_property='value'),
         Input('component_x', 'value'),
@@ -82,117 +106,148 @@ def register_callbacks(app, cache):
         Input('store-aligned', 'data'),
         Input('graph-combined', 'relayoutData'),
         State('data-selector', 'value'),
+        State('session_id', 'data'),
+        State('store-label-1', 'data'),
+        State('store-label-2', 'data'),
+        State('preprocess_1', 'value'),
+        State('preprocess_2', 'value'),
+        State('num_clusters', 'value'),
         prevent_initial_call=True
     )
-    def update_plot(session_id, plot_type, color_type, x, y, z, last_aligned, relayoutData, dataset):
+    def update_plot(plot_type, color_type, x, y, z, last_aligned, relayoutData, dataset, session_id, label_1, label_2,
+                    preprocess_1, preprocess_2, num_clusters):
+
         """Display visualization based on available data and selected visualization options
         """
+
+        # Don't update the plot if alignment hasn't occurred
+        if last_aligned == '0':
+            raise PreventUpdate
 
         # Don't regenerate plot on relayoutData events unless 3-D separate plots (where using to synchronize cameras)
         if 'graph-combined.relayoutData' in ctx.triggered_prop_ids:
             if plot_type != 'separate3':
                 raise PreventUpdate
 
-        # get from state variables; hard-coded for now
-        label_1 = 'Electrophys'
-        label_2 = 'Gene Expression'
-
-
         # Convert component numbers to integers and make 0-based instead of 1-based
         x = int(x) - 1
         y = int(y) - 1
         z = int(z) - 1
 
-        if dataset not in ('visual', 'motor'):
-            return go.Figure(), {}, ''
-
         if False:
-            efeatures_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_NMA.csv')
-            efeatures_NMA['gmm_cluster'] = efeatures_NMA['gmm_cluster'].astype('string')
-            Xe = np.array(efeatures_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
+            df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_NMA.csv')
+            df_1['gmm_cluster'] = df_1['gmm_cluster'].astype('string')
+            Xe = np.array(df_1.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
 
-            geneExp_NMA = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA.csv')
-            geneExp_NMA['gmm_cluster'] = geneExp_NMA['gmm_cluster'].astype('string')
-            Xg = np.array(geneExp_NMA.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
+            df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA.csv')
+            df_2['gmm_cluster'] = df_2['gmm_cluster'].astype('string')
+            Xg = np.array(df_2.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
 
         aligned = 'true'  # temporary override
 
         if aligned == 'true':
             # loading aligned data from cache
-            efeatures_NMA = pd.read_json(cache.get(f'{session_id}-aligned_1'))
-            efeatures_NMA['cluster'] = efeatures_NMA['cluster'].astype('string')
-            Xe = np.array(efeatures_NMA.drop(columns=['cluster', 'ttype']))
+            df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+            df_1['cluster'] = df_1['cluster'].astype('string')
+            Xg = np.array(df_1.drop(columns=['cluster', 'ttype']))
 
-            geneExp_NMA = pd.read_json(cache.get(f'{session_id}-aligned_2'))
-            geneExp_NMA['cluster'] = geneExp_NMA['cluster'].astype('string')
-            Xg = np.array(geneExp_NMA.drop(columns=['cluster', 'ttype']))
-
-            #Xe = np.array(pd.read_json(cache.get(f'{session_id}-aligned_1')))
-            #Xg = np.array(pd.read_json(cache.get(f'{session_id}-aligned_2')))
+            df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+            df_2['cluster'] = df_2['cluster'].astype('string')
+            Xe = np.array(df_2.drop(columns=['cluster', 'ttype']))
         else:
-            return go.Figure(), {}, ''
+            return go.Figure(data={}, layout=blank_layout), {}, '', str(time.time())
 
 
         style = {}  # default
         legend = ''
         if plot_type == 'alignment':
-            #fig = create_alignment_plot(Xe, Xg, dataset, x, y, z)
-            fig = plot_alignment(Xe, Xg, dataset, x, y, z)
+            fig = plot_alignment(df_1, df_2, dataset, x, y, z)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""{label_1} and {label_2} are projected to dimensions {x+1}, {y+1}, and {z+1} of the 
             latent space."""
 
         elif plot_type == 'alignment-error':
-            fig = plot_alignment_error(Xe, Xg, dataset)
+            fig = plot_alignment_error(df_1, df_2, dataset)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""Alignment error between the projections of {label_1} and {label_2} into the
             latent space.  Pairwise cell distance is the Euclidean distance between latent space projections
              for a single cell.  Fraction of Samples Closer Than True Match (FOSCTTM)..."""
 
         elif plot_type == 'separate2':
-            fig = scatter2d(efeatures_NMA, geneExp_NMA, x, y, color_type)
+            fig = scatter2d(df_1, df_2, x, y, color_type, label_1, label_2)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1} and {y+1}
             of the latent space."""
 
         elif plot_type == 'separate3':
-            fig = scatter3d(efeatures_NMA, geneExp_NMA, x, y, z, color_type, relayoutData)
+            fig = scatter3d(df_1, df_2, x, y, z, color_type, relayoutData, label_1, label_2)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1}, {y+1}, and {z+1}
             of the latent space."""
 
-        elif plot_type == 'bibiplot':
-            color_vec = efeatures_NMA[color_type]
-            fig = create_bibiplot1x2(Xg, Xe, x, y, dataset, color_vec)
-            style = {'height': '600px', 'width': '1000px'}
-            legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
-            Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
-            where the length is the value of correlation (max value 1). """
+        elif plot_type in ('bibiplot', 'heatmap', 'heatmap2'):
+            # These plots need raw data, not just aligned data
+            if dataset in ('motor', 'visual'):
+                data_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
+                data_1 = data_1.T  # mouse data needs to have gene expression data transposed
+                data_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+                if type(data_2.iloc[0, 0]) == str:
+                    # drop the first column if it contains strings (i.e., presumably cell names)
+                    data_2.drop(columns=data_2.columns[0], inplace=True)
+            else:
+                # get raw data from cache
+                file_type_1 = UploadFileType.DATA_1.name
+                file_type_2 = UploadFileType.DATA_2.name
+                data_1 = pd.read_json(cache.get(cache_key(session_id, file_type_1)))
+                data_2 = pd.read_json(cache.get(cache_key(session_id, file_type_2)))
 
-        elif plot_type == 'heatmap':
-            # gene enrichment by cluster
+                # Drop the first column, which is supposed to be cell names
+                data_1.drop(columns=data_1.columns[0], inplace=True)
+                data_2.drop(columns=data_2.columns[0], inplace=True)
 
-            fig = create_heatmap(dataset, geneExp_NMA)
-            legend = f"""The gene expression levels across all cells for the top 10 differentially-expressed genes
-            for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized gene
-            expression ranked using the Wilcox Rank Sum test."""
+            if plot_type == 'bibiplot':
+                color_vec = df_1[color_type]
+                fig = create_bibiplot1x2(data_1, data_2, Xg, Xe, x, y, dataset, color_vec,
+                                         preprocess_1, preprocess_2,
+                                         label_1, label_2)
+                style = {'height': '600px', 'width': '1000px'}
+                legend = f"""Bibiplot for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
+                Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
+                where the length is the value of correlation (max value 1). """
+            elif plot_type == 'heatmap':
+                # gene enrichment by cluster
+                # feature enrichment by cluster?
+
+                fig = create_heatmap(dataset, df_1)
+
+                legend = f"""The gene expression levels across all cells for the top 10 differentially-expressed genes
+                for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized gene
+                expression ranked using the Wilcox Rank Sum test."""
+
+            elif plot_type == 'heatmap2':
+                clusters = df_1['cluster']  # The clusters column is the same in df_1 and df_2
+                #fig = create_heatmap_general(data_1, data_2, clusters, preprocess_1, preprocess_2)
+                fig = create_heatmap2(dataset, data_1, data_2, preprocess_1, preprocess_2,
+                                      clusters, num_clusters, label_1, label_2)
+                legend = f"""Feature expression levels across all cells for the top 10 differentially-expressed features
+                for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized gene
+                expression ranked using the Wilcox Rank Sum test."""
 
         else:
             # No plot type specified - show a blank plot
-            fig = go.Figure().update_layout()
-            #style = {'height': '0', 'width': '0'}
+            fig = go.Figure(data={}, layout=blank_layout)
 
         fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
 
-        return fig, style, legend
+        return fig, style, legend, ''
 
     @app.callback(
-        Output(component_id='loading-output-1', component_property='children'),
+        Output(component_id='loading-alignment', component_property='children'),
         Output('store-aligned', 'data'),
         Input('session_id', 'data'),
         Input('btn-align', 'n_clicks'),
         Input('btn-cluster', 'n_clicks'),
-        Input(component_id='data-selector', component_property='value'),
+        State('data-selector', 'value'),
         State('preprocess_1', 'value'),
         State('preprocess_2', 'value'),
         State('ndims', 'value'),
@@ -222,21 +277,59 @@ def register_callbacks(app, cache):
                 # use mouse cortex data
 
                 # Load mouse data and clean based on prior knowledge of structure.
-                df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
-                # drop the first column if it contains strings
-                if type(df_1.iloc[1, 0]) == str:
-                    X1 = np.array(df_1.iloc[:, 1:], dtype=float)
-                else:
-                    X1 = np.array(df_1, dtype=float)
 
-                df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', header=0).T
-                X2 = np.array(df_2[1:], dtype=float)  # skip gene row
+                df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', header=0).T
+                X1 = np.array(df_1[1:], dtype=float)  # skip gene row
+
+                df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+                # drop the first column if it contains strings
+                if type(df_2.iloc[1, 0]) == str:
+                    X2 = np.array(df_2.iloc[:, 1:], dtype=float)
+                else:
+                    X2 = np.array(df_2, dtype=float)
 
                 # Load metadata files containing ttype column
                 ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')['ttype']
+
+                # # temporary: write sample data files
+                # df_1.to_csv(f'data/sample_geneExp.csv')
+                # df_2.to_csv(f'data/sample_efeature.csv')
+                # metadata = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')
+                # metadata.to_csv('data/sample_metadata.csv')
             else:
-                # use uploaded data, if any
-                return '', str(time.time())
+                # load data from cache
+                #try:
+                # key_1 = cache_key(session_id, UploadFileType.DATA_1.name)
+                # if cache.has(key_1):
+                #     df_1 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
+                #     print(f'successfully got data from cache with key {key_1}')
+                # else:
+                #     print(f'Missing expected cache key {key_1}')
+                #
+                # key_2 = cache_key(session_id, UploadFileType.DATA_2.name)
+                # if cache.has(key_2):
+                #     df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
+                #     print(f'successfully got data from cache with key {key_2}')
+                # else:
+                #     print(f'Missing expected cache key {key_2}')
+
+                df_1 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
+                df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
+
+                # The first column is supposed to include cell identifiers, so drop it.
+                X1 = np.array(df_1.iloc[:, 1:], dtype=float)
+                X2 = np.array(df_2.iloc[:, 1:], dtype=float)
+                #except ValueError:
+                    # Haven't uploaded data files yet
+                    # print('valueerror at line 319')
+                    # raise PreventUpdate
+                    # return '', str(time.time())
+
+                try:
+                    ttype = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))['ttype']
+                except ValueError:
+                    # Allow alignment to proceed even if no metadata file has been uploaded
+                    ttype = None
 
             # Apply selected preprocessing to raw datasets
             X1 = preprocess(X1, preprocess_1)
@@ -260,9 +353,6 @@ def register_callbacks(app, cache):
         # Store aligned and annotated data in cache
         cache.set(f'{session_id}-aligned_1', aligned_1.to_json())
         cache.set(f'{session_id}-aligned_2', aligned_2.to_json())
-
-        # Store
-
 
         return '', str(time.time())
 
@@ -290,6 +380,69 @@ def register_callbacks(app, cache):
             return 'separate2'
         else:
             raise PreventUpdate
+
+
+    @app.callback(
+        Output('download-aligned', 'data'),
+        Input('btn-align-download', 'n_clicks'),
+        State('session_id', 'data'),
+        State('store-label-1', 'data'),
+        State('store-label-2', 'data'),
+        prevent_initial_call=True,
+    )
+    def download_aligned(n_clicks, session_id, label_1, label_2):
+        """ Download aligned data.  Since there are two dataframes, the best way to handle this is probably to download
+        a .zip file containing two .csv files.
+        """
+
+        # read data frames from cache
+        df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+        df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+
+        # These dataframes include the aligned data as well as the cluster and ttype
+        # df_1.drop(columns=['cluster', 'ttype'])
+        # df_2.drop(columns=['cluster', 'ttype'])
+
+        # make labels safe to use in filenames (and distinct)
+        labels = safe_filenames(label_1, label_2)
+
+        bytes_io = io.BytesIO()
+        with zipfile.ZipFile(bytes_io, mode='w') as zf:
+            zf.writestr(f'aligned_{labels[0]}.csv', df_1.to_csv())
+            zf.writestr(f'aligned_{labels[1]}.csv', df_2.to_csv())
+
+        return dcc.send_bytes(bytes_io.getvalue(), 'aligned.zip', type='application/zip')
+
+    @app.callback(
+        Output('download-cluster', 'data'),
+        Input('btn-cluster-download', 'n_clicks'),
+        State('session_id', 'data'),
+        State('store-label-1', 'data'),
+        State('store-label-2', 'data'),
+        prevent_initial_call=True,
+    )
+    def download_clusters(n_clicks, session_id, label_1, label_2):
+        """ Download cluster data.  Since there are two dataframes, the best way to handle this is probably to download
+        a .zip file containing two .csv files.
+        """
+
+        # read data frames from cache
+        df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+        df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+
+        # These dataframes include the aligned data as well as the cluster and ttype
+        # df_1.drop(columns=['cluster', 'ttype'])
+        # df_2.drop(columns=['cluster', 'ttype'])
+
+        # make labels safe to use in filenames (and distinct)
+        labels = safe_filenames(label_1, label_2)
+
+        bytes_io = io.BytesIO()
+        with zipfile.ZipFile(bytes_io, mode='w') as zf:
+            zf.writestr(f'clusters_{labels[0]}.csv', df_1.to_csv())
+            zf.writestr(f'clusters_{labels[1]}.csv', df_2.to_csv())
+
+        return dcc.send_bytes(bytes_io.getvalue(), 'clusters.zip', type='application/zip')
 
     # @app.callback(
     #     Output(component_id='loading-output-2', component_property='children'),

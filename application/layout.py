@@ -3,14 +3,8 @@ import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import uuid
 
-from application.settings import appname, color_types
-
-blank_layout = {
-    'plot_bgcolor': 'rgba(0,0,0,0)',
-    'paper_bgcolor': 'rgba(0,0,0,0)',
-    'xaxis': {'visible': False, 'showline': False, 'showgrid': False},
-    'yaxis': {'visible': False, 'showline': False, 'showgrid': False},
-}
+from application.settings import appname
+from application.constants import UploadFileType, blank_layout, color_types
 
 
 def get_layout():
@@ -35,204 +29,6 @@ def get_layout():
         html.Div(
             id='main-block',
             children=[
-                # html.Div(
-                #     id='left-panel',
-                #     children=[
-                #
-                #         html.Div(
-                #             id='data-block',
-                #             children=[
-                #                 html.H3('Data', className='block-title'),
-                #                 html.P('Upload datasets to be aligned, optionally with metadata.'),
-                #
-                #                 html.H4('Select Data'),
-                #                 dcc.Dropdown(
-                #                     id='data-selector',
-                #                     options={
-                #                         'motor': 'scMNC Mouse Motor Cortex',
-                #                         'visual': 'scMNC Mouse Visual Cortex',
-                #                         'upload': 'Upload your data!'
-                #                     },
-                #                     value=''
-                #                 ),
-                #
-                #                 html.Div(
-                #                     id='upload-container',
-                #                     className='hidden',
-                #                     children=[
-                #                         html.Div(
-                #                             className='upload-block',
-                #                             children=[
-                #                                 dcc.Input(
-                #                                     id='upload_1_label',
-                #                                     type='text',
-                #                                     placeholder='File 1 Label'
-                #                                 ),
-                #                                 dcc.Upload(id={'type': 'dynamic-upload', 'index': 1},
-                #                                            children=html.Button('Upload File 1'), className='upload'),
-                #                                 html.Div(id={'type': 'dynamic-output', 'index': 1}),
-                #                                 dcc.Upload(id={'type': 'dynamic-upload', 'index': 2},
-                #                                            children=html.Button('Metadata'), className='upload'),
-                #                                 html.Div(id={'type': 'dynamic-output', 'index': 2})
-                #                             ]
-                #                         ),
-                #                         html.Div(
-                #                             className='upload-block',
-                #                             children=[
-                #                                 dcc.Input(
-                #                                     id='upload_2_label',
-                #                                     type='text',
-                #                                     placeholder='File 2 Label'
-                #                                 ),
-                #                                 dcc.Upload(id={'type': 'dynamic-upload', 'index': 3},
-                #                                            children=html.Button('Upload File 2'), className='upload'),
-                #                                 html.Div(id={'type': 'dynamic-output', 'index': 3}),
-                #                                 dcc.Upload(id={'type': 'dynamic-upload', 'index': 4},
-                #                                            children=html.Button('Metadata'), className='upload'),
-                #                                 html.Div(id={'type': 'dynamic-output', 'index': 4})
-                #                             ]
-                #                         ),
-                #                     ]
-                #                 ),
-                #                 html.H4('Preprocessing'),
-                #                 html.Label([
-                #                     'Electrophys: ',
-                #                     dcc.Dropdown(
-                #                         id='preprocess_1',
-                #                         options={
-                #                             'scale': 'Standardize',
-                #                             'log': 'Log transform'
-                #                         },
-                #                         value='scale'
-                #                     )
-                #                 ]),
-                #                 html.Label([
-                #                     'Gene Expression: ',
-                #                     dcc.Dropdown(
-                #                         id='preprocess_2',
-                #                         options={
-                #                             'scale': 'Standardize',
-                #                             'log': 'Log transform'
-                #                         },
-                #                         value='log'
-                #                     )
-                #                 ]),
-                #
-                #             ]
-                #         ),
-                #
-                #         html.Div(
-                #             id='operations-block',
-                #             children=[
-                #                 html.H3('Dataset Alignment', className='block-title'),
-                #                 html.Div([
-                #                     html.P(id='alignment-state', className='status_message'),
-                #                     html.Button('Align Datasets', id='btn-align'),
-                #                     html.Details([
-                #                         html.Summary('Alignment parameters'),
-                #                         html.Div([
-                #                             html.Label(
-                #                                 children=[
-                #                                     'eigenvalue method: ',
-                #                                     dcc.RadioItems(
-                #                                         id='eig-method',
-                #                                         options={
-                #                                             'eig': 'eig',
-                #                                             'eigs': 'eigs',
-                #                                             'eigsh': 'eigsh'
-                #                                         },
-                #                                         value='eigs'
-                #                                     ),
-                #                                 ]
-                #                             ),
-                #                             html.Br(),
-                #                             html.Label([
-                #                                 '# eigenvalues: ',
-                #                                 dcc.Input(id='eig-count', value='5', style={'width': '20px'}),
-                #                             ]),
-                #                         ]),
-                #                     ]),
-                #                     html.Button('Identify Clusters', id='btn-cluster'),
-                #                     html.Details([
-                #                         html.Summary('Clustering parameters'),
-                #                         html.Div([
-                #                             html.Label(
-                #                                 children=[
-                #                                     'clustering method: ',
-                #                                     dcc.RadioItems(
-                #                                         id='clustering-method',
-                #                                         options={
-                #                                             'gmm': 'GMM',
-                #                                         },
-                #                                         value='gmm'
-                #                                     ),
-                #                                 ]
-                #                             ),
-                #                         ]),
-                #                     ]),
-                #                     html.Div(id='progress_container', children=[
-                #                         dcc.Loading(id='loading-1', children=html.Div(id='loading-output-1') ),
-                #                         html.Br(),
-                #                         dcc.Loading(id='loading-2', children=html.Div(id='loading-output-2')),
-                #                     ])
-                #                 ])
-                #             ]
-                #         ),
-                #
-                #         html.Div(
-                #             id='controls-block',
-                #             children=[
-                #                 html.H3('Visualization', className='block-title'),
-                #                 html.Div([
-                #                     html.H4('Plot type'),
-                #                     dcc.Dropdown(
-                #                         id='plot-type',
-                #                         options={
-                #                             'alignment': 'Dataset alignment',
-                #                             'alignment-error': 'Alignment error',
-                #                             'separate2': 'Separate 2-D plots',
-                #                             'separate3': 'Separate 3-D plots',
-                #                             'bibiplot': 'Bibiplot',
-                #                             'heatmap': 'Gene enrichment by cluster'
-                #                         },
-                #                         value='alignment'
-                #                     ),
-                #
-                #                     html.H4('Color by...'),
-                #                     dcc.RadioItems(
-                #                         id='color-type',
-                #                         options=color_types,
-                #                         value='cluster'
-                #                     ),
-                #                     html.H4('Component Selection', title='Select components of the aligned datasets to be plotted .'),
-                #                     #html.Dialog()
-                #                     html.Label([' X: ',
-                #                                 dcc.Input(id='component_x',
-                #                                           type='number',
-                #                                           min='1',
-                #                                           step='1',
-                #                                           value='1',
-                #                                           className='component_input')]),
-                #                     html.Label([' Y: ',
-                #                                 dcc.Input(id='component_y',
-                #                                           type='number',
-                #                                           min='1',
-                #                                           step='1',
-                #                                           value='2',
-                #                                           className='component_input')]),
-                #                     html.Label([' Z: ',
-                #                                 dcc.Input(id='component_z',
-                #                                           type='number',
-                #                                           min='1',
-                #                                           step='1',
-                #                                           value='3',
-                #                                           className='component_input')])
-                #
-                #                 ])
-                #             ]
-                #         )
-                #     ]
-                # ),
                 html.Div(
                     id='left-panel',
                     children=[
@@ -240,29 +36,29 @@ def get_layout():
                             id='left-panel-tabs',
                             className='custom-tabs-container',
                             children=[
-                                dcc.Tab(
-                                    label='About',
-                                    className='custom-tab',
-                                    selected_className='custom-tab-selected',
-                                    children=[
-                                        html.H3(f'About {appname}'),
-                                        html.P(children=[
-                                            'This application aligns multimodal single-cell data sets to support '
-                                            'developing a deeper understanding of neural function and features. '
-                                            'Datasets used in ',
-                                            html.A(href='https://doi.org/10.1038/s42003-021-02807-6',
-                                                   children=('Manifold learning analysis suggests strategies for aligning '
-                                                      'single-cell multi-modalities and revealing functional genomics '
-                                                      'for neuronal electrophysiology'),
-                                                   target='_blank'),
-                                            ' are provided (mouse visual cortext or mouse motor cortex), '
-                                            'or user data may be uploaded.'
-                                        ]),
-
-
-
-                                    ]
-                                ),
+                                # dcc.Tab(
+                                #     label='About',
+                                #     className='custom-tab',
+                                #     selected_className='custom-tab-selected',
+                                #     children=[
+                                #         html.H3(f'About {appname}'),
+                                #         html.P(children=[
+                                #             'This application aligns multimodal single-cell data sets to support '
+                                #             'developing a deeper understanding of neural function and features. '
+                                #             'Datasets used in ',
+                                #             html.A(href='https://doi.org/10.1038/s42003-021-02807-6',
+                                #                    children=('Manifold learning analysis suggests strategies for aligning '
+                                #                       'single-cell multi-modalities and revealing functional genomics '
+                                #                       'for neuronal electrophysiology'),
+                                #                    target='_blank'),
+                                #             ' are provided (mouse visual cortex or mouse motor cortex), '
+                                #             'or user data may be uploaded.'
+                                #         ]),
+                                #
+                                #
+                                #
+                                #     ]
+                                # ),
 
                                 dcc.Tab(
                                     label='Data',
@@ -313,12 +109,13 @@ def get_layout():
                                                         dcc.Input(
                                                             id='upload_1_label',
                                                             type='text',
+                                                            value='',
                                                             placeholder='Modality 1 Label'
                                                         ),
-                                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 1},
+                                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': UploadFileType.DATA_1},
                                                                    children=html.Button('Upload Data'),
                                                                    className='upload'),
-                                                        html.Div(id={'type': 'dynamic-output', 'index': 1}),
+                                                        html.Div(id={'type': 'dynamic-output', 'index': UploadFileType.DATA_1}),
                                                         # dcc.Upload(id={'type': 'dynamic-upload', 'index': 2},
                                                         #            children=html.Button('Upload Metadata'),
                                                         #            className='upload'),
@@ -344,12 +141,13 @@ def get_layout():
                                                         dcc.Input(
                                                             id='upload_2_label',
                                                             type='text',
+                                                            value='',
                                                             placeholder='Modality 2 Label'
                                                         ),
-                                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 3},
+                                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': UploadFileType.DATA_2},
                                                                    children=html.Button('Upload Data'),
                                                                    className='upload'),
-                                                        html.Div(id={'type': 'dynamic-output', 'index': 3}),
+                                                        html.Div(id={'type': 'dynamic-output', 'index': UploadFileType.DATA_2}),
                                                         # dcc.Upload(id={'type': 'dynamic-upload', 'index': 4},
                                                         #            children=html.Button('Upload Metadata'),
                                                         #            className='upload'),
@@ -370,10 +168,10 @@ def get_layout():
                                                             'per cell.  Only "ttype" is currently supported.',
                                                             target='metadata-tooltip'
                                                         ),
-                                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': 4},
+                                                        dcc.Upload(id={'type': 'dynamic-upload', 'index': UploadFileType.METADATA},
                                                                    children=html.Button('Upload Metadata'),
                                                                    className='upload'),
-                                                        html.Div(id={'type': 'dynamic-output', 'index': 4})
+                                                        html.Div(id={'type': 'dynamic-output', 'index': UploadFileType.METADATA})
                                                     ]
                                                 ),
                                             ]
@@ -395,7 +193,7 @@ def get_layout():
                                                     'scale': 'Standardize',
                                                     'log': 'Log transform'
                                                 },
-                                                value='scale'
+                                                value='log'
                                             )
                                         ]),
                                         html.Label([
@@ -407,18 +205,17 @@ def get_layout():
                                                     'scale': 'Standardize',
                                                     'log': 'Log transform'
                                                 },
-                                                value='log'
+                                                value='scale'
                                             )
                                         ]),
 
                                     ]
                                 ),
-
                                 dcc.Tab(
                                     label='Alignment',
                                     className='custom-tab',
                                     selected_className='custom-tab-selected',
-                                    id='operations-block',
+                                    id='alignment-block',
                                     children=[
                                         html.Div([
                                             html.H3('Dataset Alignment', className='block-title'),
@@ -437,10 +234,19 @@ def get_layout():
                                             ]),
                                             html.Button('Align Datasets', id='btn-align',
                                                         className='operations-button'),
-                                        ]),
+                                            html.Button('Download Aligned Data', id='btn-align-download',
+                                                        className='operations-button'),
+                                            dcc.Download(id='download-aligned')
+                                        ])
+                                    ]
+                                ),
 
-
-
+                                dcc.Tab(
+                                    label='Clustering',
+                                    className='custom-tab',
+                                    selected_className='custom-tab-selected',
+                                    id='clustering-block',
+                                    children=[
                                         html.Div([
                                             html.H3('Cross-modal clustering', className='block-title'),
                                             # html.P(id='alignment-state', className='status_message'),
@@ -487,34 +293,15 @@ def get_layout():
                                                 dcc.Slider(id='num_clusters', value=5, min=1, max=10, step=1)
                                             ]),
                                             html.Button('Identify Clusters', id='btn-cluster', className='operations-button'),
-                                            # html.Details([
-                                            #     html.Summary('Clustering parameters'),
-                                            #     html.Div([
-                                            #         html.Label(
-                                            #             children=[
-                                            #                 'clustering method: ',
-                                            #                 dcc.RadioItems(
-                                            #                     id='clustering-method',
-                                            #                     options={
-                                            #                         'gmm': 'GMM',
-                                            #                     },
-                                            #                     value='gmm'
-                                            #                 ),
-                                            #             ]
-                                            #         ),
-                                            #     ]),
-                                            # ]),
-                                            html.Div(id='progress_container', children=[
-                                                dcc.Loading(id='loading-1', children=html.Div(id='loading-output-1')),
-                                                html.Br(),
-                                                dcc.Loading(id='loading-2', children=html.Div(id='loading-output-2')),
-                                            ])
+                                            html.Button('Download Clusters', id='btn-cluster-download',
+                                                        className='operations-button'),
+                                            dcc.Download(id='download-cluster'),
                                         ])
                                     ]
                                 ),
 
                                 dcc.Tab(
-                                    label='Plots',
+                                    label='Cluster Analysis',
                                     className='custom-tab',
                                     selected_className='custom-tab-selected',
                                     id='controls-block',
@@ -530,7 +317,8 @@ def get_layout():
                                                     'separate2': 'Separate 2-D plots',
                                                     'separate3': 'Separate 3-D plots',
                                                     'bibiplot': 'Bibiplot',
-                                                    'heatmap': 'Gene enrichment by cluster'
+                                                    #'heatmap': 'Gene enrichment by cluster [Mouse cortex]',
+                                                    'heatmap2': 'Feature enrichment by cluster'
                                                 },
                                                 value='alignment'
                                             ),
@@ -595,75 +383,17 @@ def get_layout():
                         html.P(id='graph_legend', children='')
 
                     ]
-                )
+                ),
+                html.Div(id='progress_container', children=[
+                    dcc.Loading(id='loading-1',
+                                children=html.Div(id='loading-alignment', className='loading_trigger')),
+                    dcc.Loading(id='loading-2',
+                                children=html.Div(id='loading-plot', className='loading_trigger')),
+                ])
+
             ]
         )
 
-        # html.Div(children=[
-        #     html.Div(id='controls_container', children=[
-        #         html.P("[Inactive controls]"),
-        #         dcc.Upload(
-        #             id='upload_1',
-        #             children=html.Div([
-        #                 'Drag and Drop or ',
-        #                 html.A('Select File 1')
-        #             ]),
-        #             className='upload-button',
-        #             # Allow multiple files to be uploaded
-        #             multiple=False
-        #         ),
-        #         dcc.Input(
-        #             id='upload_1_label',
-        #             type='text',
-        #             placeholder='File 1 Label'
-        #         ),
-        #
-        #         dcc.Upload(
-        #             id='upload_2',
-        #             children=html.Div([
-        #                 'Drag and Drop or ',
-        #                 html.A('Select File 2')
-        #             ]),
-        #             className='upload-button',
-        #             # Allow multiple files to be uploaded
-        #             multiple=False
-        #         ),
-        #         dcc.Input(
-        #             id='upload_2_label',
-        #             type='text',
-        #             placeholder='File 2 Label'
-        #         ),
-        #
-        #     ], style={'flex': 1}),
-        #     html.Div(id='graph_container', children=[
-        #         dcc.Graph(
-        #             id='graph_combined',
-        #             figure=fig_combined,
-        #             style={'height': '600px', 'width': '100%'}
-        #         ),
-        #     ], style={'flex': 1})
-        # ], style={
-        #     'display': 'flex',
-        #     'flexDirection': 'row',
-        #     'border': '1.5px solid gray',
-        #     'border-radius': '5px',
-        #     'padding': '10px'
-        # })
-
-        # dcc.Graph(
-        #     id='graph_combined',
-        #     figure=fig_combined,
-        # ),
-
-        # dcc.Graph(
-        #     id='graph_electrophys',
-        #     figure=fig_e
-        # ),
-
-        # dcc.Graph(
-        #     id='graph_geneexpression',
-        #     figure=fig_g
-        # )
     ])
 
     return layout

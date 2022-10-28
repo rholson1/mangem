@@ -6,72 +6,39 @@ import plotly.graph_objects as go
 import numpy as np
 import scipy.spatial.distance as sd
 from operations.alignment import calc_domainAveraged_FOSCTTM
+from application.utilities import df_to_data
+from application.constants import dataset_titles
 
 
+def plot_alignment(df_1, df_2, dataset, x, y, z):
 
-def create_alignment_plot(Xe, Xg, dataset, x, y, z):
+    d_1 = df_to_data(df_1)
+    d_2 = df_to_data(df_2)
 
-
-    pairwise_distances = [sd.euclidean(Xe[i, :], Xg[i, :]) for i in range(Xe.shape[0])]
-    foscttm = calc_domainAveraged_FOSCTTM(Xe, Xg)
-
-    titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$', 'Alignment')
-
-    fig = make_subplots(rows=1, cols=3,
-                        column_widths=[0.2, 0.2, 0.6],
-                        column_titles=titles,
-                        specs=[[{'type': 'xy'}, {'type': 'xy'}, {'type': 'scene'}]])
-
-
-
-
-    # create box plot of distances between corresponding cells in latent space
-    fig.add_trace(go.Box(y=pairwise_distances, name='Pairwise cell distance', showlegend=False), row=1, col=1)
-
-    # create box plot of FOSCTTM scores
-    fig.add_trace(go.Box(y=foscttm, name='FOSCTTM', showlegend=False), row=1, col=2)
-
-    fig.add_trace(go.Scatter3d(x=Xe[:, x], y=Xe[:, y], z=Xe[:, z],
-                               mode='markers',
-                               marker={'color': 'red', 'size': 0.75},
-                               name='Electrophys',
-                               showlegend=True),
-                  row=1, col=3)
-    fig.add_trace(go.Scatter3d(x=Xg[:, x], y=Xg[:, y], z=Xg[:, z],
-                               mode='markers',
-                               marker={'color': 'blue', 'size': 0.75},
-                               name='Gene Expression',
-                               showlegend=True),
-                  row=1, col=3)
-
-
-    fig.update_layout(title_text=f'Dataset alignment in latent space: Mouse {dataset.title()} Cortex',
-                      legend={'itemsizing': 'constant'})
-
-    return fig
-
-
-def plot_alignment(Xe, Xg, dataset, x, y, z):
     fig = go.Figure()
-    fig.add_trace(go.Scatter3d(x=Xe[:, x], y=Xe[:, y], z=Xe[:, z],
+    fig.add_trace(go.Scatter3d(x=d_1[:, x], y=d_1[:, y], z=d_1[:, z],
                                mode='markers',
                                marker={'color': 'red', 'size': 0.75},
                                name='Electrophys',
                                showlegend=True))
-    fig.add_trace(go.Scatter3d(x=Xg[:, x], y=Xg[:, y], z=Xg[:, z],
+    fig.add_trace(go.Scatter3d(x=d_2[:, x], y=d_2[:, y], z=d_2[:, z],
                                mode='markers',
                                marker={'color': 'blue', 'size': 0.75},
                                name='Gene Expression',
                                showlegend=True))
-    fig.update_layout(title_text=f'Dataset alignment in latent space: Mouse {dataset.title()} Cortex',
+    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
                       legend={'itemsizing': 'constant'})
 
     return fig
 
-def plot_alignment_error(Xe, Xg, dataset):
 
-    pairwise_distances = [sd.euclidean(Xe[i, :], Xg[i, :]) for i in range(Xe.shape[0])]
-    foscttm = calc_domainAveraged_FOSCTTM(Xe, Xg)
+def plot_alignment_error(df_1, df_2, dataset):
+
+    d_1 = df_to_data(df_1)
+    d_2 = df_to_data(df_2)
+
+    pairwise_distances = [sd.euclidean(d_1[i, :], d_2[i, :]) for i in range(d_1.shape[0])]
+    foscttm = calc_domainAveraged_FOSCTTM(d_1, d_2)
 
     titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$')
 
@@ -79,13 +46,13 @@ def plot_alignment_error(Xe, Xg, dataset):
                         column_titles=titles,
                         specs=[[{'type': 'xy'}, {'type': 'xy'}]])
 
-    # create box plot of distances between corresponding cells in latent space
+    # box plot of distances between corresponding cells in latent space
     fig.add_trace(go.Box(y=pairwise_distances, name='Pairwise cell distance', showlegend=False), row=1, col=1)
 
-    # create box plot of FOSCTTM scores
+    # box plot of FOSCTTM scores (Fraction of Samples Closer Than True Match)
     fig.add_trace(go.Box(y=foscttm, name='FOSCTTM', showlegend=False), row=1, col=2)
 
-    fig.update_layout(title_text=f'Dataset alignment in latent space: Mouse {dataset.title()} Cortex',
+    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
                       legend={'itemsizing': 'constant'})
 
     return fig
