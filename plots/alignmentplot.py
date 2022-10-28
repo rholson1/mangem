@@ -10,7 +10,7 @@ from application.utilities import df_to_data
 from application.constants import dataset_titles
 
 
-def plot_alignment(df_1, df_2, dataset, x, y, z):
+def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
 
     d_1 = df_to_data(df_1)
     d_2 = df_to_data(df_2)
@@ -19,12 +19,12 @@ def plot_alignment(df_1, df_2, dataset, x, y, z):
     fig.add_trace(go.Scatter3d(x=d_1[:, x], y=d_1[:, y], z=d_1[:, z],
                                mode='markers',
                                marker={'color': 'red', 'size': 0.75},
-                               name='Electrophys',
+                               name=label_1,
                                showlegend=True))
     fig.add_trace(go.Scatter3d(x=d_2[:, x], y=d_2[:, y], z=d_2[:, z],
                                mode='markers',
                                marker={'color': 'blue', 'size': 0.75},
-                               name='Gene Expression',
+                               name=label_2,
                                showlegend=True))
     fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
                       legend={'itemsizing': 'constant'})

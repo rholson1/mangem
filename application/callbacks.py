@@ -161,7 +161,7 @@ def register_callbacks(app, cache):
         style = {}  # default
         legend = ''
         if plot_type == 'alignment':
-            fig = plot_alignment(df_1, df_2, dataset, x, y, z)
+            fig = plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""{label_1} and {label_2} are projected to dimensions {x+1}, {y+1}, and {z+1} of the 
             latent space."""
