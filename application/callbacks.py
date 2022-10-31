@@ -68,6 +68,8 @@ def register_callbacks(app, cache):
 
     @app.callback(
         Output({'type': 'dynamic-output', 'index': MATCH}, 'children'),
+        Output({'type': 'dynamic-upload-info', 'index': MATCH}, 'children'),
+        Output({'type': 'loading-upload', 'index': MATCH}, 'children'),
         Input({'type': 'dynamic-upload', 'index': MATCH}, 'contents'),
         State({'type': 'dynamic-upload', 'index': MATCH}, 'filename'),
         State({'type': 'dynamic-upload', 'index': MATCH}, 'last_modified'),
@@ -84,6 +86,7 @@ def register_callbacks(app, cache):
         decoded = base64.b64decode(content_string)
         df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), nrows=cell_limit)
 
+        rows, columns = df.shape
         # determine the file type based on the widget used to upload the file
         file_type = UploadFileType(upload_id['index']).name
 
@@ -91,7 +94,7 @@ def register_callbacks(app, cache):
         key = cache_key(session_id, file_type)
         cache.set(key, df.to_json())
 
-        return filename
+        return filename, f'Rows: {rows}, Columns: {columns}', ''
 
     @app.callback(
         Output(component_id='graph-combined', component_property='figure'),
@@ -112,10 +115,11 @@ def register_callbacks(app, cache):
         State('preprocess_1', 'value'),
         State('preprocess_2', 'value'),
         State('num_clusters', 'value'),
+        State('num_enriched', 'value'),
         prevent_initial_call=True
     )
     def update_plot(plot_type, color_type, x, y, z, last_aligned, relayoutData, dataset, session_id, label_1, label_2,
-                    preprocess_1, preprocess_2, num_clusters):
+                    preprocess_1, preprocess_2, num_clusters, num_enriched):
 
         """Display visualization based on available data and selected visualization options
         """
@@ -171,7 +175,11 @@ def register_callbacks(app, cache):
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""Alignment error between the projections of {label_1} and {label_2} into the
             latent space.  Pairwise cell distance is the Euclidean distance between latent space projections
-             for a single cell.  Fraction of Samples Closer Than True Match (FOSCTTM)..."""
+             for a single cell.  Fraction of Samples Closer Than True Match (FOSCTTM) is computed as follows.
+             For each cell in {label_1}, we find its true match in {label_2}, then rank all other cells in the 
+             latent space based on their distance from the first cell, finally computing the fraction of cells that are 
+             closer than the true match.
+             """
 
         elif plot_type == 'separate2':
             fig = scatter2d(df_1, df_2, x, y, color_type, label_1, label_2)
@@ -211,13 +219,11 @@ def register_callbacks(app, cache):
                                          preprocess_1, preprocess_2,
                                          label_1, label_2)
                 style = {'height': '600px', 'width': '1000px'}
-                legend = f"""Bibiplot for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
+                legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
                 Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
                 where the length is the value of correlation (max value 1). """
             elif plot_type == 'heatmap':
                 # gene enrichment by cluster
-                # feature enrichment by cluster?
-
                 fig = create_heatmap(dataset, df_1)
 
                 legend = f"""The gene expression levels across all cells for the top 10 differentially-expressed genes
@@ -227,12 +233,15 @@ def register_callbacks(app, cache):
             elif plot_type == 'heatmap2':
                 clusters = df_1['cluster']  # The clusters column is the same in df_1 and df_2
                 #fig = create_heatmap_general(data_1, data_2, clusters, preprocess_1, preprocess_2)
-                fig = create_heatmap2(dataset, data_1, data_2, preprocess_1, preprocess_2,
-                                      clusters, num_clusters, label_1, label_2)
-                legend = f"""Feature expression levels across all cells for the top 10 differentially-expressed features
-                for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized gene
+                fig, top_enriched = create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preprocess_2,
+                                                    clusters, num_clusters, label_1, label_2, num_enriched)
+                legend = f"""Feature expression levels across all cells for the top {num_enriched} differentially-expressed features
+                for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized feature
                 expression ranked using the Wilcox Rank Sum test."""
 
+                # Store top-enriched to cache for subsequent download
+                cache.set(f'{session_id}-enriched_1', top_enriched[1].to_json())
+                cache.set(f'{session_id}-enriched_2', top_enriched[2].to_json())
         else:
             # No plot type specified - show a blank plot
             fig = go.Figure(data={}, layout=blank_layout)
@@ -396,8 +405,11 @@ def register_callbacks(app, cache):
         """
 
         # read data frames from cache
-        df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
-        df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        try:
+            df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+            df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        except ValueError:
+            raise PreventUpdate
 
         # These dataframes include the aligned data as well as the cluster and ttype
         # df_1.drop(columns=['cluster', 'ttype'])
@@ -427,8 +439,11 @@ def register_callbacks(app, cache):
         """
 
         # read data frames from cache
-        df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
-        df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        try:
+            df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+            df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        except ValueError:
+            raise PreventUpdate
 
         # These dataframes include the aligned data as well as the cluster and ttype
         # df_1.drop(columns=['cluster', 'ttype'])
@@ -443,6 +458,38 @@ def register_callbacks(app, cache):
             zf.writestr(f'clusters_{labels[1]}.csv', df_2.to_csv())
 
         return dcc.send_bytes(bytes_io.getvalue(), 'clusters.zip', type='application/zip')
+
+    @app.callback(
+        Output('download-enriched', 'data'),
+        Input('btn-enriched-download', 'n_clicks'),
+        State('session_id', 'data'),
+        State('store-label-1', 'data'),
+        State('store-label-2', 'data'),
+        prevent_initial_call=True,
+    )
+    def download_enriched(n_clicks, session_id, label_1, label_2):
+        """ Download enriched data.  Since there are two dataframes, the best way to handle this is probably to download
+        a .zip file containing two .csv files.
+        """
+
+        # read data frames from cache
+        try:
+            df_1 = pd.read_json(cache.get(f'{session_id}-enriched_1'))
+            df_2 = pd.read_json(cache.get(f'{session_id}-enriched_2'))
+        except ValueError:
+            raise PreventUpdate
+
+        # make labels safe to use in filenames (and distinct)
+        labels = safe_filenames(label_1, label_2)
+
+        bytes_io = io.BytesIO()
+        with zipfile.ZipFile(bytes_io, mode='w') as zf:
+            zf.writestr(f'enriched_{labels[0]}.csv', df_1.to_csv())
+            zf.writestr(f'enriched_{labels[1]}.csv', df_2.to_csv())
+
+        return dcc.send_bytes(bytes_io.getvalue(), 'enriched.zip', type='application/zip')
+
+
 
     # @app.callback(
     #     Output(component_id='loading-output-2', component_property='children'),

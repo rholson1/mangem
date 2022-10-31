@@ -104,8 +104,8 @@ def create_heatmap(dataset, geneExp_NMA):
     return fig
 
 
-def create_heatmap2(dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cluster, num_clusters,
-                    label_1, label_2):
+def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cluster, num_clusters,
+                    label_1, label_2, num_enriched):
     """ Create heatmap showing differentially-expressed genes by cluster
     """
 
@@ -119,6 +119,8 @@ def create_heatmap2(dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cl
     # # standardize data (subtract mean and divide by StdDev) for each gene.
     # for gene in labels_X:
     #     geneExp[gene] = scale(geneExp[gene])
+
+    top_enriched = {}
 
     fig = make_subplots(rows=2, cols=2,
                         row_heights=[0.1, 0.9],
@@ -138,8 +140,11 @@ def create_heatmap2(dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cl
 
         sc.tl.rank_genes_groups(adata, 'cluster', method='wilcoxon')
 
-        # Get the names of the top 10 genes for each cluster
-        top10genes = [adata.uns['rank_genes_groups']['names'][r][c] for c in range(num_clusters) for r in range(10)]
+        # Get the names of the top num_enriched genes for each cluster
+        top10genes = [adata.uns['rank_genes_groups']['names'][r][c] for c in range(num_clusters) for r in range(num_enriched)]
+
+        # Store ranked feature data
+        top_enriched[col] = pd.DataFrame(data=adata.uns['rank_genes_groups']['names'][:num_enriched])
 
         # find order to sort cells by cluster
         cell_order = np.argsort(cell_cluster)
@@ -171,7 +176,7 @@ def create_heatmap2(dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cl
 
     fig.update_layout(title_text=f'Feature Enrichment by Cluster')
 
-    return fig
+    return fig, top_enriched
 
 
 

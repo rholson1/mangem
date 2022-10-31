@@ -125,6 +125,10 @@ button:hover, input[type='button']:hover {
   flex: 3;
 }
 
+.tab-image {
+  width: 100%;
+}
+
 #graph_legend {
   width: 1000px;
 }
@@ -189,11 +193,7 @@ details[open] summary ~ * {
 #loading-output-1, #loading-output-2 {
   color: var(--color-primary);
 }
-/*
-.loading_trigger {
-  display: none;
-}
-*/
+
 .status_message {
   color: var(--color-primary);
 }
