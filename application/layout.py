@@ -309,7 +309,10 @@ def get_layout():
                                                 value='scale'
                                             )
                                         ]),
-
+                                        html.Br(),
+                                        html.Br(),
+                                        html.A(html.Button('Reset Application', className='operations-button'),
+                                               href='/'),
                                     ]
                                 ),
                                 dcc.Tab(
