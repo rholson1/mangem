@@ -7,6 +7,8 @@
   --color-body-font: #494949;
   --color-anchor: #0479a8;
   --color-anchor-hover: #03678f;
+  --color-footer-bg: #282728;
+  --color-footer: #adadad;
 
   --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
@@ -34,10 +36,65 @@ body{
   margin: 0;
 }
 
-#id_header {
+#id_topbar {
   color: var(--color-bg);
   background-color: var(--color-primary);
-  padding: 10px 10px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+}
+
+#id_topbar a {
+  color: inherit; /*var(--color-anchor);*/
+  text-decoration: none;
+  cursor: pointer;
+}
+#id_topbar a:hover {
+  color: inherit; /* var(--color-anchor-hover);*/
+}
+
+#id_titlebar {
+  padding: 0 10px;
+}
+
+#id_header {
+  color: var(--color-primary); /*var(--color-bg);*/
+  background-color: var(--color-bg);  /*var(--color-primary);*/
+  border-bottom: 2px solid var(--color-primary);
+  padding: 0; /* 10px 10px;*/
+
+}
+
+#id_footer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  color: var(--color-footer);
+  background-color: var(--color-footer-bg);
+  box-shadow: 0 50vh 0 50vh var(--color-footer-bg);
+  border-top: 2px solid var(--color-accent);
+}
+
+#id_footer a {
+  color: var(--color-footer);
+  text-decoration: none;
+}
+#id_footer a:hover {
+  color: var(--color-bg);
+}
+
+.uw-logo a svg {
+  width: 200px;
+  height: 150px;
+  min-width: 175px;
+  fill: var(--color-footer);
+  color: var(--color-footer);
+}
+.uw-logo a:hover svg {
+    fill: var(--color-bg);
+    color: var(--color-bg);
 }
 
 .hidden {
