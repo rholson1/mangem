@@ -291,6 +291,7 @@ def get_layout():
                                             dcc.Dropdown(
                                                 id='preprocess_1',
                                                 options={
+                                                    'none': 'None',
                                                     'scale': 'Standardize',
                                                     'log': 'Log transform'
                                                 },
@@ -303,6 +304,7 @@ def get_layout():
                                             dcc.Dropdown(
                                                 id='preprocess_2',
                                                 options={
+                                                    'none': 'None',
                                                     'scale': 'Standardize',
                                                     'log': 'Log transform'
                                                 },
@@ -312,7 +314,7 @@ def get_layout():
                                         html.Br(),
                                         html.Br(),
                                         html.A(html.Button('Reset Application', className='operations-button'),
-                                               href='/'),
+                                               href=''),
                                     ]
                                 ),
                                 dcc.Tab(
