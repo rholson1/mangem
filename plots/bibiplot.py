@@ -92,7 +92,10 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
 
     titles = (label_1, label_2)
 
-    fig = make_subplots(rows=1, cols=2,
+    fig = make_subplots(rows=2, cols=2,
+                        row_heights=[0, 1],
+                        vertical_spacing=0.1,
+                        horizontal_spacing=0.02,
                         column_titles=titles,
                         shared_xaxes=True,
                         shared_yaxes=True)
@@ -114,7 +117,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
     #colors = [color_dict[c] for c in color]
 
     # Scatter plots
-    for r in [1]:
+    for r in [2]:
         for category in categories:
             subset = list(color == category)
             c = 1
@@ -138,8 +141,6 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
                                      ),
                           row=r, col=c)
 
-
-
         # c = 1
         # fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
         #                          marker={'size': 2, 'color': colors},
@@ -158,8 +159,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
         #                          hoverinfo="none"),
         #               row=r, col=c)
 
-    # Circles
-    for r in [0]:
+        # Circles
         for c in [0, 1]:
             fig.add_shape(type='circle',
                           line={'color': 'Black', 'width': 1},
@@ -168,42 +168,41 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
                           x0=-unit, y0=-unit, x1=unit, y1=unit,
                           row=r, col=c)
 
+        # Lines (correlations between genes/features and the latent space)
+        label_y_offset = 8  # pixels
 
-    # Lines (correlations between genes/features and the latent space)
-    label_y_offset = 8  # pixels
-    for c, (Z, F, labels, Rho) in enumerate(zip([Zx, Zy], [X, Y], [labels_X, labels_Y], [Rho_x, Rho_y])):
-        labels = np.array(labels)
-        sig_idx = []
-        for i in range(F.shape[1]):
-            if np.sqrt(np.sum(Rho[i,:]**2)) > .6:
-                sig_idx.append(i)
-                fig.add_shape(type='line',
-                              xref='x', yref='y',
-                              row=1, col=c + 1,
-                              x0=0, y0=0,
-                              x1=Rho[i, 0], y1=Rho[i, 1],
-                              line={'color': 'black', 'width': 1})
+        for c, (Z, F, labels, Rho) in enumerate(zip([Zx, Zy], [X, Y], [labels_X, labels_Y], [Rho_x, Rho_y])):
+            labels = np.array(labels)
+            sig_idx = []
+            for i in range(F.shape[1]):
+                if np.sqrt(np.sum(Rho[i,:]**2)) > .6:
+                    sig_idx.append(i)
+                    fig.add_shape(type='line',
+                                  xref='x', yref='y',
+                                  row=r, col=c + 1,
+                                  x0=0, y0=0,
+                                  x1=Rho[i, 0], y1=Rho[i, 1],
+                                  line={'color': 'black', 'width': 1})
 
-                fig.add_annotation(x=Rho[i, 0],
-                                   y=Rho[i, 1],
-                                   yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
-                                   text=labels[i],
-                                   showarrow=False,
-                                   row=1, col=c + 1)
+                    fig.add_annotation(x=Rho[i, 0],
+                                       y=Rho[i, 1],
+                                       yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
+                                       text=labels[i],
+                                       showarrow=False,
+                                       row=r, col=c + 1)
 
-        # Add labels to lines
-        if False:
-            fig.add_trace(go.Scatter(
-                x=Rho[sig_idx, 0], y=Rho[sig_idx, 1],
-                text=np.array(labels)[sig_idx],
-                mode='text',
-                showlegend=False,
-                hovertemplate='%{text}<extra></extra>'
-            ),
-            row=1, col=c + 1)
+            # Add labels to lines
+            if False:
+                fig.add_trace(go.Scatter(
+                    x=Rho[sig_idx, 0], y=Rho[sig_idx, 1],
+                    text=np.array(labels)[sig_idx],
+                    mode='text',
+                    showlegend=False,
+                    hovertemplate='%{text}<extra></extra>'
+                ),
+                row=r, col=c + 1)
 
-    # Axis labels, etc
-    for r in [1]:
+        # Axis labels, etc
         c = 1
         fig.update_yaxes(title_text=f'Component {y_col + 1}', row=r, col=c,
                          scaleanchor=f'x{plot_id(r, c)}', scaleratio=1,
@@ -211,11 +210,12 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
         c = 2
         fig.update_yaxes(scaleanchor=f'x{plot_id(r, c)}', scaleratio=1, row=r, col=c,
                          showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
-    for c in [1, 2]:
-        fig.update_xaxes(title_text=f'Component {x_col + 1}', row=1, col=c,
-                         showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
-        fig.update_xaxes(row=1, col=c,
-                         showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
+
+        for c in [1, 2]:
+            fig.update_xaxes(title_text=f'Component {x_col + 1}', row=1, col=c,
+                             showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
+            fig.update_xaxes(row=r, col=c,
+                             showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
 
     # This appears to link x and y axes so both plots have same level of pan/zoom
     fig.update_xaxes(matches='x')

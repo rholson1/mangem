@@ -501,6 +501,11 @@ def get_layout():
                 html.Div(
                     id='right-panel',
                     children=[
+                        dbc.Alert(id='user-data-alert',
+                                  children=[],
+                                  color='primary',
+                                  is_open=False,
+                                  dismissable=True),
 
                         html.Div(
                             id='graph_block',

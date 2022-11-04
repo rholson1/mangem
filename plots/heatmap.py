@@ -162,7 +162,7 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
                                  x=x, #display_data.columns.values,
                                  y=display_data.index,
                                  showscale=False,
-                                 hovertemplate='Cell: %{x}<br>Gene: %{y}<extra></extra>'
+                                 hovertemplate='Cell: %{x}<br>Feature: %{y}<extra></extra>'
                                  ),
                       row=2, col=col)
 

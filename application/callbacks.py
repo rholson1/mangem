@@ -253,6 +253,9 @@ def register_callbacks(app, cache):
     @app.callback(
         Output(component_id='loading-alignment', component_property='children'),
         Output('store-aligned', 'data'),
+        Output('user-data-alert', 'children'),
+        Output('user-data-alert', 'is_open'),
+        Output('user-data-alert', 'color'),
         Input('session_id', 'data'),
         Input('btn-align', 'n_clicks'),
         Input('btn-cluster', 'n_clicks'),
@@ -270,6 +273,8 @@ def register_callbacks(app, cache):
     def align_and_cluster_datasets(session_id, align_clicks, cluster_clicks, dataset,
                                    preprocess_1, preprocess_2,
                                    ndims, neighbors, num_clusters):
+
+        error_msg = ''
 
         # add logic for selectively processing only what has to be processed
         # (e.g., if clustering button is clicked, don't re-run alignment (which is expensive!)
@@ -321,9 +326,16 @@ def register_callbacks(app, cache):
                 #     print(f'successfully got data from cache with key {key_2}')
                 # else:
                 #     print(f'Missing expected cache key {key_2}')
+                try:
+                    df_1 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
+                    df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
+                except ValueError:
+                    error_msg = 'Two data files must be uploaded before data can be aligned.'
+                    return '', '0', error_msg, bool(error_msg), 'danger'
 
-                df_1 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
-                df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
+                if len(df_1) != len(df_2):
+                    error_msg = 'Both data files must have the same number of rows.'
+                    return '', '0', error_msg, bool(error_msg), 'danger'
 
                 # The first column is supposed to include cell identifiers, so drop it.
                 X1 = np.array(df_1.iloc[:, 1:], dtype=float)
@@ -339,6 +351,9 @@ def register_callbacks(app, cache):
                 except ValueError:
                     # Allow alignment to proceed even if no metadata file has been uploaded
                     ttype = None
+                except KeyError:
+                    error_msg = 'The metadata file does not contain a column named "ttype".'
+                    ttype = None
 
             # Apply selected preprocessing to raw datasets
             X1 = preprocess(X1, preprocess_1)
@@ -346,6 +361,7 @@ def register_callbacks(app, cache):
 
             # Align datasets
             proj, _ = nonlinear_manifold_alignment(X1, X2, int(ndims), int(neighbors)) #, eig_method=eig_method, eig_count=int(eig_count))
+
             aligned_1, aligned_2 = proj
 
         # Identify clusters (generalize later with clustering parameters, alternate methods)
@@ -363,7 +379,7 @@ def register_callbacks(app, cache):
         cache.set(f'{session_id}-aligned_1', aligned_1.to_json())
         cache.set(f'{session_id}-aligned_2', aligned_2.to_json())
 
-        return '', str(time.time())
+        return '', str(time.time()), error_msg, bool(error_msg), 'warning'
 
 
     @app.callback(
