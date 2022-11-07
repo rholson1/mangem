@@ -196,6 +196,19 @@ button:hover, input[type='button']:hover {
   width: 100%;
 }
 
+table.table-csv {
+  border: 1px solid black;
+  color: var(--color-body-font) !important;
+  background: var(--color-bg) !important;
+  text-align: center;
+  border-collapse: collapse;
+}
+
+table.table-csv td {
+  border: 1px solid var(--color-body-font);
+}
+
+
 #about-page {
   width: 90%;
   max-width: 1000px;

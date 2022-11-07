@@ -30,18 +30,7 @@ def get_layout():
                                   html.H1(children=appname)
                               ])
 
-                     # html.Div(html.H1(children=appname), className='header-element'),
-                     # html.Div([
-                     #     html.Div(html.H2('Daifeng Wang Lab')),
-                     #
-                     #     html.Div(html.A(html.Img(src='assets/uw-logo-flush-web.svg', alt='UW-Madison logo', id='id_uwlogo'),
-                     #            href='https://www.wisc.edu')),
-                     # ], id='id_logo_container')
                  ]),
-
-    #     html.Div(children='''
-    #     Demonstration of plotting aligned data in latent space (first three dimensions).
-    # '''),
 
         html.Div(
             id='main-block',
@@ -116,13 +105,50 @@ def get_layout():
                                                                     html.I(id='modality-1-tooltip',
                                                                            className='fa-regular fa-circle-question')
                                                                 ]),
-                                                                dbc.Tooltip(
-                                                                    'All data should be uploaded in .csv files.  '
-                                                                    'Column headers must be present.  The first column should '
-                                                                    'contain cell identifiers.  All data files should have the '
-                                                                    'same number of rows and should have a consistent row order '
-                                                                    'corresponding to the cells.',
-                                                                    target='modality-1-tooltip'
+                                                                dbc.Tooltip(children=[
+                                                                    'Each uploaded .csv file should have the same number '
+                                                                    'of rows and should have a consistent cell (row) order. ',
+                                                                    html.Table(className='table-csv', children=[
+                                                                        html.Tr([
+                                                                            html.Td(),
+                                                                            html.Td('Feat. 1'),
+                                                                            html.Td('Feat. 2'),
+                                                                            html.Td('Feat. 3'),
+                                                                            html.Td('...'),]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 1'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td(''),]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 2'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td(''),]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 3'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('')]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('...'),
+                                                                            html.Td(''),
+                                                                            html.Td(''),
+                                                                            html.Td(''),
+                                                                            html.Td(''),]
+                                                                        )]
+                                                                    )
+
+
+                                                                    ],
+                                                                    target='modality-1-tooltip',
                                                                 ),
                                                                 dcc.Input(
                                                                     id='upload_1_label',
@@ -138,10 +164,7 @@ def get_layout():
                                                                              'index': UploadFileType.DATA_1}),
                                                                 html.Div(id={'type': 'dynamic-output',
                                                                              'index': UploadFileType.DATA_1}),
-                                                                # dcc.Upload(id={'type': 'dynamic-upload', 'index': 2},
-                                                                #            children=html.Button('Upload Metadata'),
-                                                                #            className='upload'),
-                                                                # html.Div(id={'type': 'dynamic-output', 'index': 2})
+
                                                             ]
                                                         ),
                                                         html.Div(
@@ -152,12 +175,47 @@ def get_layout():
                                                                     html.I(id='modality-2-tooltip',
                                                                            className='fa-regular fa-circle-question')
                                                                 ]),
-                                                                dbc.Tooltip(
-                                                                    'All data should be uploaded in .csv files.  '
-                                                                    'Column headers must be present.  The first column should '
-                                                                    'contain cell identifiers.  All data files should have the '
-                                                                    'same number of rows and should have a consistent row order '
-                                                                    'corresponding to the cells.',
+                                                                dbc.Tooltip(children=[
+                                                                    'Each uploaded .csv file should have the same number '
+                                                                    'of rows and should have a consistent cell (row) order. ',
+                                                                    html.Table(className='table-csv', children=[
+                                                                        html.Tr([
+                                                                            html.Td(),
+                                                                            html.Td('Feat. 1'),
+                                                                            html.Td('Feat. 2'),
+                                                                            html.Td('Feat. 3'),
+                                                                            html.Td('...'),]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 1'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td(''),]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 2'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td(''),]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 3'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('#'),
+                                                                            html.Td('')]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('...'),
+                                                                            html.Td(''),
+                                                                            html.Td(''),
+                                                                            html.Td(''),
+                                                                            html.Td(''),]
+                                                                        )]
+                                                                    )
+                                                                    ],
                                                                     target='modality-2-tooltip'
                                                                 ),
                                                                 dcc.Input(
@@ -174,10 +232,6 @@ def get_layout():
                                                                              'index': UploadFileType.DATA_2}),
                                                                 html.Div(id={'type': 'dynamic-output',
                                                                              'index': UploadFileType.DATA_2}),
-                                                                # dcc.Upload(id={'type': 'dynamic-upload', 'index': 4},
-                                                                #            children=html.Button('Upload Metadata'),
-                                                                #            className='upload'),
-                                                                # html.Div(id={'type': 'dynamic-output', 'index': 4})
                                                             ]
                                                         ),
                                                         html.Div(
@@ -188,10 +242,37 @@ def get_layout():
                                                                     html.I(id='metadata-tooltip',
                                                                            className='fa-regular fa-circle-question')
                                                                 ]),
-                                                                dbc.Tooltip(
-                                                                    'Additional cell information can be supplied in a metadata file. '
-                                                                    'It should be a .csv file with column headers and one row '
-                                                                    'per cell.  Only "ttype" is currently supported.',
+                                                                dbc.Tooltip(children=[
+                                                                    'Additional cell information can be supplied in a metadata .csv file. '
+                                                                    'Only "ttype" (transcriptomic type) is currently supported.',
+                                                                    html.Table(className='table-csv', children=[
+                                                                        html.Tr([
+                                                                            html.Td(),
+                                                                            html.Td('ttype'),
+                                                                            html.Td('...'), ]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 1'),
+                                                                            html.Td('#'),
+                                                                            html.Td(''), ]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 2'),
+                                                                            html.Td('#'),
+                                                                            html.Td(''), ]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('Cell 3'),
+                                                                            html.Td('#'),
+                                                                            html.Td('')]
+                                                                        ),
+                                                                        html.Tr([
+                                                                            html.Td('...'),
+                                                                            html.Td(''),
+                                                                            html.Td(''), ]
+                                                                        )]
+                                                                               )
+                                                                    ],
                                                                     target='metadata-tooltip'
                                                                 ),
                                                                 dcc.Upload(id={'type': 'dynamic-upload',
