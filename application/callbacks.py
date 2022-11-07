@@ -1,6 +1,7 @@
-from dash import Output, Input, State, MATCH, ctx, dcc
+from dash import Output, Input, State, MATCH, ALL, ctx, dcc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import pandas as pd
 import numpy as np
@@ -180,6 +181,16 @@ def register_callbacks(app, cache):
              latent space based on their distance from the first cell, finally computing the fraction of cells that are 
              closer than the true match.
              """
+        elif plot_type == 'alignment-combo':
+            fig = plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z)
+            style = {'height': '600px', 'width': '1000px'}
+            legend = f"""Alignment error between the projections of {label_1} and {label_2} into the
+            latent space.  Pairwise cell distance is the Euclidean distance between latent space projections
+             for a single cell.  Fraction of Samples Closer Than True Match (FOSCTTM) is computed as follows.
+             For each cell in {label_1}, we find its true match in {label_2}, then rank all other cells in the 
+             latent space based on their distance from the first cell, finally computing the fraction of cells 
+             that are closer than the true match.
+             """
 
         elif plot_type == 'separate2':
             fig = scatter2d(df_1, df_2, x, y, color_type, label_1, label_2)
@@ -280,8 +291,12 @@ def register_callbacks(app, cache):
         # (e.g., if clustering button is clicked, don't re-run alignment (which is expensive!)
         if ctx.triggered_id == 'btn-cluster':
             # load aligned data from cache
-            df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
-            df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+            try:
+                df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+                df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+            except ValueError:
+                error_msg = 'Data must be aligned before clusters can be identified.'
+                return '', '0', error_msg, bool(error_msg), 'danger'
             ttype = df_1['ttype']
             aligned_1 = np.array(df_1.drop(columns=['ttype', 'cluster']))
             aligned_2 = np.array(df_2.drop(columns=['ttype', 'cluster']))
@@ -400,7 +415,7 @@ def register_callbacks(app, cache):
         clustering button"""
 
         if ctx.triggered_id == 'btn-align':
-            return 'alignment'
+            return 'alignment-combo'
         elif ctx.triggered_id == 'btn-cluster':
             return 'separate2'
         else:
@@ -505,6 +520,33 @@ def register_callbacks(app, cache):
 
         return dcc.send_bytes(bytes_io.getvalue(), 'enriched.zip', type='application/zip')
 
+    @app.callback(
+        Output('graph-page', 'className'),
+        Output('about-page', 'className'),
+        Input('left-panel-tabs', 'value'),
+        prevent_initial_call=True,
+    )
+    def handle_tab_change(selected_tab):
+        """Control visibility of right-pane content based on selected tab"""
+        if selected_tab == 'tab-1':
+            return 'hidden', ''
+        else:
+            return '', 'hidden'
+
+    @app.callback(
+        Output('left-panel-tabs', 'value'),
+        Input({'type': 'next-button', 'index': ALL}, 'n_clicks'),
+        State('left-panel-tabs', 'value')
+    )
+    def handle_next_button(n_clicks, selected_tab):
+        if selected_tab == 'tab-2':
+            return 'tab-3'
+        elif selected_tab == 'tab-3':
+            return 'tab-4'
+        elif selected_tab == 'tab-4':
+            return 'tab-5'
+        else:
+            raise PreventUpdate
 
 
     # @app.callback(

@@ -123,7 +123,7 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
     top_enriched = {}
 
     fig = make_subplots(rows=2, cols=2,
-                        row_heights=[0.1, 0.9],
+                        row_heights=[0.05, 0.95],
                         vertical_spacing=0.02,
                         horizontal_spacing=0.2,
                         column_titles=[label_1, label_2],
@@ -174,7 +174,7 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
 
     #fig.update_xaxes(matches='x')  # this changes the behavior after bibiplot
 
-    fig.update_layout(title_text=f'Feature Enrichment by Cluster')
+    fig.update_layout(title_text=f'Cluster-Specific Feature Expression')
 
     return fig, top_enriched
 

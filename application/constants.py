@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-color_types = {'ttype': 't-type', 'cluster': 'Cluster'}
+color_types = {'cluster': 'Cluster', 'ttype': 't-type'}
 
 dataset_titles = {
     'motor': 'Mouse Motor Cortex',

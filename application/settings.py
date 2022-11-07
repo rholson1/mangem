@@ -1,4 +1,4 @@
-appname = 'Manifold Alignment of Multimodal Single-Cell Data'
+appname = 'Manifold Alignment of Single Cell Multi-modal Data'
 
 DEBUG = True
 
