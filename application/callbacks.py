@@ -278,14 +278,21 @@ def register_callbacks(app, cache):
         State('num_clusters', 'value'),
         # State(component_id='eig-method', component_property='value'),
         # State(component_id='eig-count', component_property='value'),
-
+        State({'type': 'dynamic-output', 'index': ALL}, 'children'),
         prevent_initial_call=True
     )
     def align_and_cluster_datasets(session_id, align_clicks, cluster_clicks, dataset,
                                    preprocess_1, preprocess_2,
-                                   ndims, neighbors, num_clusters):
+                                   ndims, neighbors, num_clusters,
+                                   upload_filenames):
 
         error_msg = ''
+
+        # If user-uploaded data, make sure that two data files have been uploaded (before trying to read from cache!)
+        if dataset not in ('motor', 'visual'):
+            if not (upload_filenames[0] and upload_filenames[1]):
+                error_msg = 'Two data files must be uploaded before data can be aligned.'
+                return '', '0', error_msg, bool(error_msg), 'danger'
 
         # add logic for selectively processing only what has to be processed
         # (e.g., if clustering button is clicked, don't re-run alignment (which is expensive!)
@@ -355,19 +362,17 @@ def register_callbacks(app, cache):
                 # The first column is supposed to include cell identifiers, so drop it.
                 X1 = np.array(df_1.iloc[:, 1:], dtype=float)
                 X2 = np.array(df_2.iloc[:, 1:], dtype=float)
-                #except ValueError:
-                    # Haven't uploaded data files yet
-                    # print('valueerror at line 319')
-                    # raise PreventUpdate
-                    # return '', str(time.time())
 
-                try:
-                    ttype = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))['ttype']
-                except ValueError:
-                    # Allow alignment to proceed even if no metadata file has been uploaded
-                    ttype = None
-                except KeyError:
-                    error_msg = 'The metadata file does not contain a column named "ttype".'
+                if upload_filenames[2]:  # only try to read metadata from cache if a file has been uploaded
+                    try:
+                        ttype = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))['ttype']
+                    except ValueError:
+                        # Allow alignment to proceed even if no metadata file has been uploaded
+                        ttype = None
+                    except KeyError:
+                        error_msg = 'The metadata file does not contain a column named "ttype".'
+                        ttype = None
+                else:
                     ttype = None
 
             # Apply selected preprocessing to raw datasets
