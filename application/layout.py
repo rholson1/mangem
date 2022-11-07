@@ -96,8 +96,8 @@ def get_layout():
                                                 dcc.Dropdown(
                                                     id='data-selector',
                                                     options={
-                                                        'motor': 'Mouse Motor Cortex',
-                                                        'visual': 'Mouse Visual Cortex',
+                                                        'motor': 'Mouse Motor Cortex (1208 cells)',
+                                                        'visual': 'Mouse Visual Cortex (3654 cells)',
                                                         'upload': 'Upload your data!'
                                                     },
                                                     value=''
