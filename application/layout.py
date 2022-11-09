@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 import dash_dangerously_set_inner_html
 import uuid
 
-from application.settings import appname
+from application.settings import appname, HTTP_ROOT
 from application.constants import UploadFileType, blank_layout, color_types
 
 
@@ -549,7 +549,7 @@ def get_layout():
                         html.Div(
                             id='about-page',
                             children=[
-                                html.Img(src='./assets/cover_figure.png',
+                                html.Img(src=f'{HTTP_ROOT}/assets/cover_figure.png',
                                          alt='Manifold alignment and clustering flow chart',
                                          className='tab-image'),
                                 # html.P(children=[
