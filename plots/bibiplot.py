@@ -212,7 +212,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
                          showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
 
         for c in [1, 2]:
-            fig.update_xaxes(title_text=f'Component {x_col + 1}', row=1, col=c,
+            fig.update_xaxes(title_text=f'Component {x_col + 1}', row=r, col=c,
                              showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)
             fig.update_xaxes(row=r, col=c,
                              showticklabels=False, showgrid=False, showline=False, visible=True, zeroline=False)

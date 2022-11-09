@@ -1,5 +1,6 @@
 from enum import Enum
 
+marker_size_3d = 1.25  #0.75
 
 color_types = {'cluster': 'Cluster', 'ttype': 't-type'}
 

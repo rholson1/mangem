@@ -1,7 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from application.constants import color_types
+from application.constants import color_types, marker_size_3d
 
 
 def scatter2d(df1, df2, x, y, color_type, label_1, label_2):
@@ -80,9 +80,9 @@ def scatter3d(df1, df2, x, y, z, color_type, relayoutData, label_1, label_2):
 
     if color_type:
         fig_e = px.scatter_3d(df1, x=x_name, y=y_name, z=z_name, color=color_type).update_traces(
-                    marker={'size': 0.75})
+                    marker={'size': marker_size_3d})
         fig_g = px.scatter_3d(df2, x=x_name, y=y_name, z=z_name, color=color_type).update_traces(
-                    marker={'size': 0.75})
+                    marker={'size': marker_size_3d})
 
         # Suppress legend for one of the plots to avoid double entries
         for d in fig_e.data:

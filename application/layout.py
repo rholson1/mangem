@@ -49,18 +49,34 @@ def get_layout():
                                     selected_className='custom-tab-selected',
                                     children=[
                                         html.H3(f'{appname}'),
-                                        'This application implements methods described in ',
+                                        'Recent single-cell multimodal data reveal multi-scale characteristics '
+                                        'of single cells, such as transcriptomics, morphology, and '
+                                        'electrophysiology. However, integrating and analyzing such multimodal '
+                                        'data to deeper understand functional genomics and gene regulation in '
+                                        'various cellular characteristics remains elusive. This web app implements '
+                                        'multiple machine learning methods for single-cell multi-modal data integration '
+                                        'and analysis, including emerging manifold alignment methods. The users can '
+                                        'upload their multi-modal data and select the alignment method. The aligned '
+                                        'cells from multimodalities can be clustered into multimodal cell clusters. '
+                                        'Further cluster analyses can reveal corresponding features across modalities. '
+                                        'The technical details including pre-loaded datasets are available in our '
+                                        'publication, ',
                                         html.A(href='https://doi.org/10.1038/s42003-021-02807-6',
-                                               children=('Manifold learning analysis suggests strategies for aligning '
+                                               children=(#'Huang, J., Sheng, J. & Wang, D. Manifold learning analysis suggests strategies to align single-cell multimodal data of neuronal electrophysiology and transcriptomics. Commun Biol 4, 1308 (2021). https://doi.org/10.1038/s42003-021-02807-6'
+                                                         'Manifold learning analysis suggests strategies for aligning '
                                                          'single-cell multi-modalities and revealing functional genomics '
-                                                         'for neuronal electrophysiology'),
+                                                         'for neuronal electrophysiology'
+                                                         ),
                                                target='_blank'),
-                                        '  and includes datasets from that paper (mouse visual cortex and motor cortex) '
-                                        'while also supporting use of uploaded data.',
+                                        '.',
                                         html.P([
                                             'For questions, contact ',
                                             html.A('Daifeng Wang, Ph.D.', href='mailto:daifeng.wang@wisc.edu'),
                                         ]),
+                                        html.P(
+                                            html.A(href='https://example.com',
+                                                   children=['Video Demo'], target='_blank'),
+                                        )
                                     ]
                                 ),
 
@@ -440,7 +456,7 @@ def get_layout():
                                                         'separate3': 'Separate 3-D plots',
                                                         'bibiplot': 'Bibiplot',
                                                         # 'heatmap': 'Gene enrichment by cluster [Mouse cortex]',
-                                                        'heatmap2': 'Cluster-specific Feature Expression'
+                                                        'heatmap2': 'Cluster-Specific Feature Expression'
                                                     },
                                                     value='alignment'
                                                 ),
@@ -536,16 +552,16 @@ def get_layout():
                                 html.Img(src='assets/cover_figure.png',
                                          alt='Manifold alignment and clustering flow chart',
                                          className='tab-image'),
-                                html.P(children=[
-                                    'This application demonstrates use of nonlinear manifold learning to '
-                                    'align single cell multi-modal data sets in a low-dimension latent space, '
-                                    'enabling identification of cross-modal cell clusters.'
-                                ]),
+                                # html.P(children=[
+                                #     'This application demonstrates use of nonlinear manifold learning to '
+                                #     'align single cell multi-modal data sets in a low-dimension latent space, '
+                                #     'enabling identification of cross-modal cell clusters.'
+                                # ]),
                                 html.H3('Usage'),
                                 html.Ol(id='list-steps',
                                     children=[
                                     html.Li([
-                                        html.H4('Select Data'),
+                                        html.H4('Upload Data'),
                                         html.P('On the Data tab, select a predefined data set (mouse motor or '
                                                'visual cortex neurons) or upload your own data files. '
                                                'User uploaded data must be in .csv files where the first row '
@@ -580,8 +596,8 @@ def get_layout():
                                                'cells with the identified cross-modal clusters.')
                                     ]),
                                     html.Li([
-                                        html.H4('Cluster Analysis'),
-                                        html.P('The cluster analysis tab allows selection of visualizations '
+                                        html.H4('Analysis'),
+                                        html.P('The analysis tab allows selection of visualizations '
                                                'and control of relevant parameters. '
                                                'Supported plot types include:'),
                                         html.Ul([

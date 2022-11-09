@@ -7,7 +7,7 @@ import numpy as np
 import scipy.spatial.distance as sd
 from operations.alignment import calc_domainAveraged_FOSCTTM
 from application.utilities import df_to_data
-from application.constants import dataset_titles
+from application.constants import dataset_titles, marker_size_3d
 
 
 def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
@@ -18,12 +18,12 @@ def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
     fig = go.Figure()
     fig.add_trace(go.Scatter3d(x=d_1[:, x], y=d_1[:, y], z=d_1[:, z],
                                mode='markers',
-                               marker={'color': 'red', 'size': 0.75},
+                               marker={'color': 'red', 'size': marker_size_3d},
                                name=label_1,
                                showlegend=True))
     fig.add_trace(go.Scatter3d(x=d_2[:, x], y=d_2[:, y], z=d_2[:, z],
                                mode='markers',
-                               marker={'color': 'blue', 'size': 0.75},
+                               marker={'color': 'blue', 'size': marker_size_3d},
                                name=label_2,
                                showlegend=True))
     fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
@@ -81,13 +81,13 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z):
 
     fig.add_trace(go.Scatter3d(x=d_1[:, x], y=d_1[:, y], z=d_1[:, z],
                                mode='markers',
-                               marker={'color': 'red', 'size': 0.75},
+                               marker={'color': 'red', 'size': marker_size_3d},
                                name=label_1,
                                showlegend=True),
                   row=1, col=3)
     fig.add_trace(go.Scatter3d(x=d_2[:, x], y=d_2[:, y], z=d_2[:, z],
                                mode='markers',
-                               marker={'color': 'blue', 'size': 0.75},
+                               marker={'color': 'blue', 'size': marker_size_3d},
                                name=label_2,
                                showlegend=True),
                   row=1, col=3)
