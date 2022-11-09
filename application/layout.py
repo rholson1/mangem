@@ -74,7 +74,7 @@ def get_layout():
                                             html.A('Daifeng Wang, Ph.D.', href='mailto:daifeng.wang@wisc.edu'),
                                         ]),
                                         html.P(
-                                            html.A(href='https://example.com',
+                                            html.A(href='https://mediaspace.wisc.edu/media/DemoA+Manifold+Alignment+of+Single+Cell+Multi-modal+Data/1_mm61ps0r',
                                                    children=['Video Demo'], target='_blank'),
                                         )
                                     ]
