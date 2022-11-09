@@ -549,7 +549,7 @@ def get_layout():
                         html.Div(
                             id='about-page',
                             children=[
-                                html.Img(src='assets/cover_figure.png',
+                                html.Img(src='./assets/cover_figure.png',
                                          alt='Manifold alignment and clustering flow chart',
                                          className='tab-image'),
                                 # html.P(children=[
