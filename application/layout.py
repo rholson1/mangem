@@ -81,7 +81,7 @@ def get_layout():
                                 ),
 
                                 dcc.Tab(
-                                    label='Step 1 \n Data',
+                                    label='Step 1 \nUpload Data',
                                     className='custom-tab',
                                     selected_className='custom-tab-selected',
                                     # id='data-block',
