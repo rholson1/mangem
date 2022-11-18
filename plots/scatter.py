@@ -4,14 +4,15 @@ from operator import itemgetter
 from application.constants import color_types, marker_size_3d
 
 
-def scatter2d(df1, df2, x, y, color_type, label_1, label_2):
+def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
     :param df2: Pandas dataframe 2
     :param x: column number for x-coordinate
     :param y: column number for y-coordinate
-    :param color: column name for color
+    :param color_type: column name for color
+    :param metadata_type: name of metadata column to be used for color if color_type == 'metadata'
     :param label_1: label for df1
     :param label_2: label for df2
     :return:
@@ -23,9 +24,11 @@ def scatter2d(df1, df2, x, y, color_type, label_1, label_2):
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=(label_1, label_2))
 
-    if color_type:
-        fig_e = px.scatter(df1, x=x_name, y=y_name, color=color_type)
-        fig_g = px.scatter(df2, x=x_name, y=y_name, color=color_type)
+    color_col = metadata_type if color_type == 'metadata' else color_type
+
+    if color_col:
+        fig_e = px.scatter(df1, x=x_name, y=y_name, color=color_col, color_continuous_scale=px.colors.sequential.Blackbody)
+        fig_g = px.scatter(df2, x=x_name, y=y_name, color=color_col, color_continuous_scale=px.colors.sequential.Blackbody)
 
         # Suppress legend for one of the plots to avoid double entries
         for d in fig_e.data:
@@ -36,7 +39,8 @@ def scatter2d(df1, df2, x, y, color_type, label_1, label_2):
         fig.add_traces(sorted(fig_g.data, key=itemgetter('legendgroup')), rows=1, cols=2)
 
         # Set the legend title
-        fig.update_layout(legend_title=color_types[color_type], legend={'itemsizing': 'constant'})
+        fig.update_layout(legend_title=metadata_type if color_type == 'metadata' else color_types[color_type],
+                          legend={'itemsizing': 'constant'})
 
     else:
         # Uncolored plots
@@ -55,7 +59,7 @@ def scatter2d(df1, df2, x, y, color_type, label_1, label_2):
     return fig
 
 
-def scatter3d(df1, df2, x, y, z, color_type, relayoutData, label_1, label_2):
+def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_1, label_2):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
@@ -64,6 +68,7 @@ def scatter3d(df1, df2, x, y, z, color_type, relayoutData, label_1, label_2):
     :param y: column number for y-coordinate
     :param z: column number for z-coordinate
     :param color_type: column name for color
+    :param metadata_type: name of metadata column to be used for color if color_type == 'metadata'
     :param relayoutData: relayoutData from figure
     :param label_1: label for df1
     :param label_2: label for df2
@@ -78,10 +83,14 @@ def scatter3d(df1, df2, x, y, z, color_type, relayoutData, label_1, label_2):
     fig = make_subplots(rows=1, cols=2, subplot_titles=(label_1, label_2),
                         specs=[[{'type': 'scene'}, {'type': 'scene'}]])
 
-    if color_type:
-        fig_e = px.scatter_3d(df1, x=x_name, y=y_name, z=z_name, color=color_type).update_traces(
+    color_col = metadata_type if color_type == 'metadata' else color_type
+
+    if color_col:
+        fig_e = px.scatter_3d(df1, x=x_name, y=y_name, z=z_name,
+                              color=color_col, color_continuous_scale=px.colors.sequential.Blackbody).update_traces(
                     marker={'size': marker_size_3d})
-        fig_g = px.scatter_3d(df2, x=x_name, y=y_name, z=z_name, color=color_type).update_traces(
+        fig_g = px.scatter_3d(df2, x=x_name, y=y_name, z=z_name,
+                              color=color_col, color_continuous_scale=px.colors.sequential.Blackbody).update_traces(
                     marker={'size': marker_size_3d})
 
         # Suppress legend for one of the plots to avoid double entries
@@ -93,7 +102,8 @@ def scatter3d(df1, df2, x, y, z, color_type, relayoutData, label_1, label_2):
         fig.add_traces(sorted(fig_g.data, key=itemgetter('legendgroup')), rows=1, cols=2)
 
         # Set the legend title
-        fig.update_layout(legend_title=color_types[color_type], legend={'itemsizing': 'constant'})
+        fig.update_layout(legend_title=metadata_type if color_type == 'metadata' else color_types[color_type],
+                          legend={'itemsizing': 'constant'})
 
     else:
         # Uncolored plots

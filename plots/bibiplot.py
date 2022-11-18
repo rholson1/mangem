@@ -23,7 +23,7 @@ def normalize_raw_df(data):
     return X
 
 
-def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
+def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, metadata_type,
                        preprocess_1, preprocess_2, label_1, label_2):
     """
     Create 1x2 bibiplot
@@ -35,6 +35,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
     :param y_col: latent space component used as the y plotting dimension
     :param dataset: which dataset selected by user (visual/motor/upload)
     :param color: vector identifying groups for coloring plots
+    :param metadata_type: name of metadata column to use
     :param preprocess_1: user-selected preprocessing method for dataset 1
     :param preprocess_2: user-selected preprocessing method for dataset 2
     :param label_1: label for dataset 1
@@ -42,8 +43,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
     :return:
     """
 
-    # initially, special handling for mouse datasets
-
+    # special handling for mouse datasets
     if dataset in ('motor', 'visual'):
         # from bibiplot_motor.ipynb
         geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
@@ -66,20 +66,14 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
         Y = Y / np.std(Y, axis=0)
 
         labels_Y = ephysY.columns.tolist()
+
     else:  # User-uploaded data
-
-        # normalize each dataset in the same way as mouse gene data
-        # X = normalize_raw_df(data_1)
-        # Y = normalize_raw_df(data_2)
-
-        #
         labels_X = data_1.columns.tolist()
         labels_Y = data_2.columns.tolist()
 
         # preprocess using user-selected method
         X = preprocess(data_1, preprocess_1)
         Y = preprocess(data_2, preprocess_2)
-
 
     Zx = d1[:, (x_col, y_col)]
     Zx = Zx / np.std(Zx, axis=0)
@@ -111,53 +105,79 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
         d1[:, i] = d1[:, i] / np.max(np.abs(d1[:, i])) * 0.707
         d2[:, i] = d2[:, i] / np.max(np.abs(d2[:, i])) * 0.707
 
-    # Convert category to a color code
-    categories = sorted(list(set(color)))
-    color_dict = {category: px.colors.qualitative.Plotly[i] for i, category in enumerate(categories)}
-    #colors = [color_dict[c] for c in color]
+    if color is None:
+        # No color vector, so use a single group, single color, with no legend
+        colors = 'black'
+        use_categorical_colors = False
+        show_legend = False
+    else:
+
+        categories = list(set(color))
+        if len(categories) <= 10:  # arbitrary limit, but corresponds to length of color vector
+            # category plot, show legend
+            categories = sorted(categories)
+            color_dict = {category: px.colors.qualitative.Plotly[i] for i, category in enumerate(categories)}
+            use_categorical_colors = True
+            show_legend = True
+        else:
+            # too many categories for legend.
+            use_categorical_colors = False
+            if color.dtype in ('string', 'object'):
+                # plot black, no legend
+                colors = 'black'
+                show_legend = False
+            else:
+                # presumably numeric
+                # continuous plot, show legend
+                categories = sorted(categories)
+                colors = color
+                show_legend = True
 
     # Scatter plots
     for r in [2]:
-        for category in categories:
-            subset = list(color == category)
+        if use_categorical_colors:
+            for category in categories:
+                subset = list(color == category)
+                c = 1
+                fig.add_trace(go.Scatter(x=d1[subset, 0], y=d1[subset, 1], mode='markers',
+                                         marker={'size': 2, 'color': color_dict[category]},
+                                         xaxis=f'x{plot_id(r, c)}',
+                                         yaxis=f'y{plot_id(r, c)}',
+                                         showlegend=False,
+                                         hoverinfo="none",
+                                         name=category
+                                         ),
+                              row=r, col=c)
+                c = 2
+                fig.add_trace(go.Scatter(x=d2[subset, 0], y=d2[subset, 1], mode='markers',
+                                         marker={'size': 2, 'color': color_dict[category]},
+                                         xaxis=f'x{plot_id(r, c)}',
+                                         yaxis=f'y{plot_id(r, c)}',
+                                         showlegend=True,
+                                         hoverinfo="none",
+                                         name=category
+                                         ),
+                              row=r, col=c)
+        else:
+            # Create a single plot, using a color vector instead of a single color
             c = 1
-            fig.add_trace(go.Scatter(x=d1[subset, 0], y=d1[subset, 1], mode='markers',
-                                     marker={'size': 2, 'color': color_dict[category]},
+            fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
+                                     marker={'size': 2, 'color': colors, 'colorscale': 'Jet'},
                                      xaxis=f'x{plot_id(r, c)}',
                                      yaxis=f'y{plot_id(r, c)}',
                                      showlegend=False,
-                                     hoverinfo="none",
-                                     name=category
+                                     hoverinfo="none"
                                      ),
                           row=r, col=c)
             c = 2
-            fig.add_trace(go.Scatter(x=d2[subset, 0], y=d2[subset, 1], mode='markers',
-                                     marker={'size': 2, 'color': color_dict[category]},
+            fig.add_trace(go.Scatter(x=d2[:, 0], y=d2[:, 1], mode='markers',
+                                     marker={'size': 2, 'color': colors, 'colorscale': 'Jet', 'showscale': show_legend},
                                      xaxis=f'x{plot_id(r, c)}',
                                      yaxis=f'y{plot_id(r, c)}',
-                                     showlegend=True,
-                                     hoverinfo="none",
-                                     name=category
+                                     showlegend=False, #show_legend,
+                                     hoverinfo="none"
                                      ),
                           row=r, col=c)
-
-        # c = 1
-        # fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
-        #                          marker={'size': 2, 'color': colors},
-        #                          xaxis=f'x{plot_id(r, c)}',
-        #                          yaxis=f'y{plot_id(r, c)}',
-        #                          showlegend=False,
-        #                          hoverinfo="none"
-        #                          ),
-        #               row=r, col=c)
-        # c = 2
-        # fig.add_trace(go.Scatter(x=d2[:, 0], y=d2[:, 1], mode='markers',
-        #                          marker={'size': 2, 'color': colors},
-        #                          xaxis=f'x{plot_id(r, c)}',
-        #                          yaxis=f'y{plot_id(r, c)}',
-        #                          showlegend=False,
-        #                          hoverinfo="none"),
-        #               row=r, col=c)
 
         # Circles
         for c in [0, 1]:
@@ -221,8 +241,9 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color,
     fig.update_xaxes(matches='x')
     fig.update_yaxes(matches='y')
 
-    fig.update_layout(plot_bgcolor='white',
-                      legend={'itemsizing': 'constant', 'title': color_types[color.name]})
+    fig.update_layout(plot_bgcolor='white')
+    if show_legend:
+        fig.update_layout(legend={'itemsizing': 'constant', 'title': color_types.get(color.name, color.name)})
 
     return fig
 

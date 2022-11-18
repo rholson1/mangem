@@ -104,6 +104,7 @@ def register_callbacks(app, cache):
         Output('loading-plot', 'children'),
         Input(component_id='plot-type', component_property='value'),
         Input(component_id='color-type', component_property='value'),
+        Input('metadata-type', 'value'),
         Input('component_x', 'value'),
         Input('component_y', 'value'),
         Input('component_z', 'value'),
@@ -119,7 +120,8 @@ def register_callbacks(app, cache):
         State('num_enriched', 'value'),
         prevent_initial_call=True
     )
-    def update_plot(plot_type, color_type, x, y, z, last_aligned, relayoutData, dataset, session_id, label_1, label_2,
+    def update_plot(plot_type, color_type, metadata_type, x, y, z, last_aligned, relayoutData,
+                    dataset, session_id, label_1, label_2,
                     preprocess_1, preprocess_2, num_clusters, num_enriched):
 
         """Display visualization based on available data and selected visualization options
@@ -159,6 +161,14 @@ def register_callbacks(app, cache):
             df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
             df_2['cluster'] = df_2['cluster'].astype('string')
             Xe = np.array(df_2.drop(columns=['cluster', 'ttype']))
+
+            # load metadata dataframe (use in conjunction with metadata-type)
+            if metadata_type and dataset == 'upload':
+                # uploaded metadata
+                metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
+                # append metadata to dataframes so that it's available for visualization
+                df_1[metadata_type] = list(metadata_df[metadata_type])
+                df_2[metadata_type] = list(metadata_df[metadata_type])
         else:
             return go.Figure(data={}, layout=blank_layout), {}, '', str(time.time())
 
@@ -193,13 +203,13 @@ def register_callbacks(app, cache):
              """
 
         elif plot_type == 'separate2':
-            fig = scatter2d(df_1, df_2, x, y, color_type, label_1, label_2)
+            fig = scatter2d(df_1, df_2, x, y, color_type, metadata_type, label_1, label_2)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1} and {y+1}
             of the latent space."""
 
         elif plot_type == 'separate3':
-            fig = scatter3d(df_1, df_2, x, y, z, color_type, relayoutData, label_1, label_2)
+            fig = scatter3d(df_1, df_2, x, y, z, color_type, metadata_type, relayoutData, label_1, label_2)
             style = {'height': '600px', 'width': '1000px'}
             legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1}, {y+1}, and {z+1}
             of the latent space."""
@@ -225,8 +235,9 @@ def register_callbacks(app, cache):
                 data_2.drop(columns=data_2.columns[0], inplace=True)
 
             if plot_type == 'bibiplot':
-                color_vec = df_1[color_type]
-                fig = create_bibiplot1x2(data_1, data_2, Xg, Xe, x, y, dataset, color_vec,
+                color_col = metadata_type if color_type == 'metadata' else color_type
+                color_vec = df_1.get(color_col, None)
+                fig = create_bibiplot1x2(data_1, data_2, Xg, Xe, x, y, dataset, color_vec, metadata_type,
                                          preprocess_1, preprocess_2,
                                          label_1, label_2)
                 style = {'height': '600px', 'width': '1000px'}
@@ -267,6 +278,7 @@ def register_callbacks(app, cache):
         Output('user-data-alert', 'children'),
         Output('user-data-alert', 'is_open'),
         Output('user-data-alert', 'color'),
+        Output('metadata-type', 'options'),
         Input('session_id', 'data'),
         Input('btn-align', 'n_clicks'),
         Input('btn-cluster', 'n_clicks'),
@@ -279,12 +291,14 @@ def register_callbacks(app, cache):
         # State(component_id='eig-method', component_property='value'),
         # State(component_id='eig-count', component_property='value'),
         State({'type': 'dynamic-output', 'index': ALL}, 'children'),
+        State('metadata-type', 'options'),
         prevent_initial_call=True
     )
     def align_and_cluster_datasets(session_id, align_clicks, cluster_clicks, dataset,
                                    preprocess_1, preprocess_2,
                                    ndims, neighbors, num_clusters,
-                                   upload_filenames):
+                                   upload_filenames,
+                                   metadata_options):
 
         error_msg = ''
 
@@ -292,7 +306,7 @@ def register_callbacks(app, cache):
         if dataset not in ('motor', 'visual'):
             if not (upload_filenames[0] and upload_filenames[1]):
                 error_msg = 'Two data files must be uploaded before data can be aligned.'
-                return '', '0', error_msg, bool(error_msg), 'danger'
+                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
 
         # add logic for selectively processing only what has to be processed
         # (e.g., if clustering button is clicked, don't re-run alignment (which is expensive!)
@@ -303,7 +317,7 @@ def register_callbacks(app, cache):
                 df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
             except ValueError:
                 error_msg = 'Data must be aligned before clusters can be identified.'
-                return '', '0', error_msg, bool(error_msg), 'danger'
+                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
             ttype = df_1['ttype']
             aligned_1 = np.array(df_1.drop(columns=['ttype', 'cluster']))
             aligned_2 = np.array(df_2.drop(columns=['ttype', 'cluster']))
@@ -332,6 +346,8 @@ def register_callbacks(app, cache):
                 # df_2.to_csv(f'data/sample_efeature.csv')
                 # metadata = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')
                 # metadata.to_csv('data/sample_metadata.csv')
+
+                metadata_options = {'ttype': 'Transcriptomic Type'}
             else:
                 # load data from cache
                 #try:
@@ -353,11 +369,11 @@ def register_callbacks(app, cache):
                     df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
                 except ValueError:
                     error_msg = 'Two data files must be uploaded before data can be aligned.'
-                    return '', '0', error_msg, bool(error_msg), 'danger'
+                    return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
 
                 if len(df_1) != len(df_2):
                     error_msg = 'Both data files must have the same number of rows.'
-                    return '', '0', error_msg, bool(error_msg), 'danger'
+                    return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
 
                 # The first column is supposed to include cell identifiers, so drop it.
                 X1 = np.array(df_1.iloc[:, 1:], dtype=float)
@@ -365,7 +381,9 @@ def register_callbacks(app, cache):
 
                 if upload_filenames[2]:  # only try to read metadata from cache if a file has been uploaded
                     try:
-                        ttype = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))['ttype']
+                        metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
+                        metadata_options = metadata_df.columns
+                        ttype = None  #metadata_df['ttype']
                     except ValueError:
                         # Allow alignment to proceed even if no metadata file has been uploaded
                         ttype = None
@@ -399,7 +417,7 @@ def register_callbacks(app, cache):
         cache.set(f'{session_id}-aligned_1', aligned_1.to_json())
         cache.set(f'{session_id}-aligned_2', aligned_2.to_json())
 
-        return '', str(time.time()), error_msg, bool(error_msg), 'warning'
+        return '', str(time.time()), error_msg, bool(error_msg), 'warning', metadata_options
 
 
     @app.callback(

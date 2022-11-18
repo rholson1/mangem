@@ -120,6 +120,10 @@ button:hover, input[type='button']:hover {
   color: var(--color-anchor);
 }
 
+label, legend {
+  display: block;
+}
+
 .custom-tab-selected {
   border-bottom: none;
   border-top: 2px solid var(--color-accent) !important;

@@ -467,6 +467,13 @@ def get_layout():
                                                     options=color_types,
                                                     value='cluster'
                                                 ),
+                                                dcc.Dropdown(
+                                                    id='metadata-type',
+                                                    options={
+                                                        'ttype': 'Transcriptomic Type'
+                                                    },
+                                                    placeholder='Select metadata...',
+                                                ),
                                                 html.H4('Component Selection',
                                                         title='Select components of the aligned datasets to be plotted .'),
                                                 # html.Dialog()
