@@ -1,10 +1,122 @@
+# adapted from https://github.com/Oafish1/WR2MD/blob/main/mmd_wrapper/algs/source/maninetcluster/alignment.py
 # Align data sets
+
 import numpy as np
+import scipy as sp
 from scipy.sparse.linalg import eigs, eigsh
-from .maninetcluster.util import pairwise_error
+from .maninetcluster.util import pairwise_error, block_antidiag
 from .maninetcluster.neighborhood import neighbor_graph, laplacian
 from .maninetcluster.distance import SquaredL2
+from .maninetcluster.correspondence import Correspondence
 from .maninetcluster.util import Timer
+from .mmd_ma_helper import mmd_ma_helper
+
+from unioncom import UnionCom
+from functools import reduce
+
+
+def alignment(method, X, Y, num_dims, neighbors=2):
+    """ Interface to alignment methods
+    'lma': 'Linear Manifold Alignment',
+    'nlma': 'Nonlinear Manifold Alignment (NLMA)',
+    'unioncom': 'UnionCom',
+    'cca': 'CCA',
+    'mmdma': 'MMD-MA'
+
+    """
+
+
+    if method in ('lma', 'nlma'):
+        Wx = neighbor_graph(X, k=neighbors)
+        Wy = neighbor_graph(Y, k=neighbors)
+        eig_method = 'eigs'
+        eig_count = num_dims + 2
+        if method == 'lma':
+            corr = Correspondence(matrix=np.eye(len(X)))
+            proj = ManifoldLinear(X, Y, corr, num_dims, Wx, Wy).project(X, Y, num_dims)
+        elif method == 'nlma':
+            proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method, eig_count=eig_count)
+    elif method == 'unioncom':
+        uc = UnionCom.UnionCom(output_dim=num_dims)
+        proj = uc.fit_transform(dataset=[X, Y])
+    elif method == 'cca':
+        corr = Correspondence(matrix=np.eye(len(X)))
+        proj = CCA(X, Y, corr, num_dims).project(X, Y, num_dims)
+    elif method == 'mmdma':
+        # Perform MMD-MA alignment
+        X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
+        Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
+        X = np.matmul(X, X.T)
+        Y = np.matmul(Y, Y.T)
+        proj, history, ab = mmd_ma_helper(X, Y, p=32)
+    else:
+        raise Exception('unexpected alignment method')
+    return proj
+
+
+def unioncom_alignment(X, Y, num_dims=32):
+
+    uc = UnionCom.UnionCom(output_dim=num_dims)
+    proj = uc.fit_transform(dataset=[X, Y])  # ??? output_dim
+    return proj, {'pairwise_error': pairwise_error(*proj, metric=SquaredL2)}  # ??? correct?
+
+
+def mmd_ma_alignment(X, Y, num_dims=32):
+    # Perform MMD-MA alignment
+    X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
+    Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
+    X = np.matmul(X, X.T)
+    Y = np.matmul(Y, Y.T)
+    proj, history, ab = mmd_ma_helper(X, Y, p=32)
+    return proj, {'pairwise_error': pairwise_error(*proj, metric=SquaredL2)}
+
+
+def cca_alignment(X, Y, num_dims):
+    """ CCA Alignment"""
+    corr = Correspondence(matrix=np.eye(len(X)))
+    proj = CCA(X, Y, corr, num_dims).project(X, Y, num_dims)
+    return proj, {'pairwise_error': pairwise_error(*proj, metric=SquaredL2)}
+
+
+def lma_alignment(X, Y, num_dims):
+    """ LMA: Linear Manifold Alignment"""
+    corr = Correspondence(matrix=np.eye(len(X)))
+    proj = ManifoldLinear(X, Y, corr, num_dims).project(X, Y, num_dims)
+    return proj, {'pairwise_error': pairwise_error(*proj, metric=SquaredL2)}
+
+
+def _linear_decompose(X, Y, L, num_dims, eps):
+    Z = sp.linalg.block_diag(X.T, Y.T)
+    u, s, _ = np.linalg.svd(np.dot(Z, Z.T))
+    Fplus = np.linalg.pinv(np.dot(u, np.diag(np.sqrt(s))))
+    T = reduce(np.dot, (Fplus, Z, L, Z.T, Fplus.T))
+    L = 0.5 * (T + T.T)
+    d1, d2 = X.shape[1], Y.shape[1]
+    return _manifold_decompose(L, d1, d2, num_dims, eps, lambda v: np.dot(Fplus.T, v))
+
+
+class LinearAlignment(object):
+    def project(self, X, Y, num_dims=None):
+        if num_dims is None:
+            return np.dot(X, self.pX), np.dot(Y, self.pY)
+        return np.dot(X, self.pX[:, :num_dims]), np.dot(Y, self.pY[:, :num_dims])
+
+    def apply_transform(self, other):
+        self.pX = np.dot(self.pX, other.pX)
+        self.pY = np.dot(self.pY, other.pY)
+
+
+class ManifoldLinear(LinearAlignment):
+    def __init__(self, X, Y, corr, num_dims, Wx, Wy, mu=0.9, eps=1e-8):
+        L = _manifold_setup(Wx, Wy, corr.matrix(), mu)
+        self.pX, self.pY = _linear_decompose(X, Y, L, num_dims, eps)
+
+
+class CCA(LinearAlignment):
+    def __init__(self, X, Y, corr, num_dims, eps=1e-8):
+        Wxy = corr.matrix()
+        L = laplacian(block_antidiag(Wxy, Wxy.T))
+        self.pX, self.pY = _linear_decompose(X, Y, L, num_dims, eps)
 
 
 def nonlinear_manifold_alignment(X, Y, num_dims=2, neighbors=2): #, eig_method='eigs', eig_count=5):
@@ -19,7 +131,7 @@ def nonlinear_manifold_alignment(X, Y, num_dims=2, neighbors=2): #, eig_method='
     Wy = neighbor_graph(Y, k=neighbors)  # was k=5
 
     eig_method = 'eigs'
-    eig_count = num_dims + 2  # compute a couple of extra eigenvalues in case of 0-values eigenvalues
+    eig_count = num_dims + 2  # compute a couple of extra eigenvalues in case of 0-valued eigenvalues
 
     proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method, eig_count=eig_count)
     return proj, {'pairwise_error': pairwise_error(*proj, metric=SquaredL2)}
@@ -31,19 +143,15 @@ def _manifold_setup(Wx, Wy, Wxy, mu):
     return laplacian(W)
 
 
-def _manifold_decompose(L, d1, d2, num_dims, eps, vec_func=None, eig_method=None, eig_count=0):
-    if eig_method == 'eig':
+def _manifold_decompose(L, d1, d2, num_dims, eps, vec_func=None, eig_method='eig', eig_count=0):
+    if eig_method == 'eig' or vec_func is not None:
         vals, vecs = np.linalg.eig(L)
     elif eig_method == 'eigs':
-        vals, vecs = eigs(L, k=eig_count, sigma=0, which='LR')  # assume no more than 2 0-valued eigenvalues
+        vals, vecs = eigs(L, k=eig_count or num_dims + 2, sigma=0, which='LR')
     elif eig_method == 'eigsh':
-        vals, vecs = eigsh(L, k=eig_count, sigma=0, which='LM')
-
-
-    # with Timer('eig'):
-    #     vals, vecs = np.linalg.eig(L)
-    # with Timer('eigs'):
-    #     vals2, vecs2 = eigs(L, k=num_dims + 2)  # assume no more than 2 0-valued eigenvalues
+        vals, vecs = eigsh(L, k=eig_count or num_dims + 2, sigma=0, which='LM')
+    else:
+        raise Exception('no eigenvalue method specified')
 
     idx = np.argsort(vals)
 
@@ -51,6 +159,7 @@ def _manifold_decompose(L, d1, d2, num_dims, eps, vec_func=None, eig_method=None
     for i in range(len(idx)):
         if vals[idx[i]] >= eps:
             break
+
     vecs = vecs.real[:, idx[i:]]
     if vec_func:
         vecs = vec_func(vecs)
@@ -70,14 +179,11 @@ def manifold_nonlinear(X, Y, num_dims, Wx, Wy, mu=0.9, eps=1e-8, eig_method=None
     return _manifold_decompose(L, X.shape[0], Y.shape[0], num_dims, eps, eig_method=eig_method, eig_count=eig_count)
 
 
-
 #
 # From https://github.com/rsinghlab/SCOT/blob/master/src/evals.py
 # Author: Ritambhara Singh, Pinar Demetci, Rebecca Santorella
 # 19 February 2020
 #
-
-
 def calc_frac_idx(x1_mat, x2_mat):
     """
     Returns fraction closer than true match for each sample (as an array)

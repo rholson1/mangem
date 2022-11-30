@@ -17,6 +17,9 @@ def get_layout():
         dcc.Store(id='store-aligned', data='0'),
         dcc.Store(id='store-label-1', data='Modality 1'),
         dcc.Store(id='store-label-2', data='Modality 2'),
+        dcc.Store(id={'type': 'store-upload', 'index': UploadFileType.DATA_1}, data='0'),
+        dcc.Store(id={'type': 'store-upload', 'index': UploadFileType.DATA_2}, data='0'),
+        dcc.Store(id={'type': 'store-upload', 'index': UploadFileType.METADATA}, data='0'),
 
         html.Div(id='id_header',
                  children=[
@@ -337,7 +340,30 @@ def get_layout():
                                                         },
                                                         value='scale'
                                                     )
-                                                ])
+                                                ]),
+                                                html.H4([
+                                                    'Explore data',
+                                                    html.I(id='explore-tooltip',
+                                                           className='fa-regular fa-circle-question')
+                                                ]),
+                                                dbc.Tooltip([
+                                                    'Enter one or two variables (for example, genes) in the search box '
+                                                    'and select a cell phenotype from the metadata dropdown '
+                                                    'to see a set of boxplots (one variable) or a scatter plot '
+                                                    '(two variables).'
+                                                ], target='explore-tooltip'),
+                                                dcc.Input(id='explore-vars',
+                                                          type='text',
+                                                          debounce=True,
+                                                          placeholder='X1 or X1,X2'),
+                                                dcc.Dropdown(
+                                                    id='metadata-type-x',
+                                                    options={
+                                                        'ttype': 'Transcriptomic Type'
+                                                    },
+                                                    placeholder='Select metadata...',
+                                                ),
+                                                html.Br(),
                                             ]),
 
                                             html.Div(children=[
@@ -359,6 +385,16 @@ def get_layout():
                                         html.Div(id='alignment-block', children=[
                                             html.Div([
                                                 html.H3('Dataset Alignment', className='block-title'),
+                                                html.Label([
+                                                    'Alignment Algorithm:',
+                                                    dcc.Dropdown(id='alignment-method', options=[
+                                                        {'label': 'Linear Manifold Alignment', 'value': 'lma'},
+                                                        {'label': 'Nonlinear Manifold Alignment', 'value': 'nlma'},
+                                                        {'label': 'Canonical Correlation Analysis', 'value': 'cca'},
+                                                        {'label': 'Manifold Alignment with Maximum Mean Discrepancy', 'value': 'mmdma', 'disabled': True},
+                                                        {'label': 'UnionCom', 'value': 'unioncom', 'disabled': True},
+                                                    ])
+                                                ]),
                                                 html.Label([
                                                     'Latent space dimension: ',
                                                     # dcc.Input(id='ndims', value='5', style={'width': '20px'},
@@ -407,6 +443,8 @@ def get_layout():
                                                             id='clustering-method',
                                                             options={
                                                                 'gmm': 'Gaussian Mixture Model',
+                                                                'kmeans': 'k-means',
+                                                                'hierarchical': 'Ward hierarchical'
                                                             },
                                                             value='gmm'
                                                         ),
@@ -535,7 +573,28 @@ def get_layout():
                                   color='primary',
                                   is_open=False,
                                   dismissable=True),
-
+                        dbc.Alert(id='user-data-alert-x',
+                                  children=[],
+                                  color='danger',
+                                  is_open=False,
+                                  dismissable=True),
+                        html.Div(
+                            id='upload-page',
+                            children=[
+                                html.Div(
+                                    id='graph_block-x',
+                                    children=[
+                                        dcc.Graph(
+                                            id='graph-x',
+                                            mathjax=True,
+                                            figure=go.Figure(data={}, layout=blank_layout),
+                                            style={'height': '600px', 'width': '600px'}
+                                        ),
+                                    ]
+                                ),
+                                html.P(id='graph_legend-x', children='')
+                            ]
+                        ),
                         html.Div(
                             id='graph-page',
                             children=[

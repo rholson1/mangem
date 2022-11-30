@@ -1,14 +1,15 @@
 from dash import Output, Input, State, MATCH, ALL, ctx, dcc
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 
 import pandas as pd
 import numpy as np
 
 from plots import *
-from operations.alignment import nonlinear_manifold_alignment
-from operations.clustering import cluster_gmm
+from operations.alignment import alignment #nonlinear_manifold_alignment
+from operations.clustering import cluster_gmm, cluster_kmeans, cluster_hierarchical
 from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
 
@@ -71,6 +72,7 @@ def register_callbacks(app, cache):
         Output({'type': 'dynamic-output', 'index': MATCH}, 'children'),
         Output({'type': 'dynamic-upload-info', 'index': MATCH}, 'children'),
         Output({'type': 'loading-upload', 'index': MATCH}, 'children'),
+        Output({'type': 'store-upload', 'index': MATCH}, 'data'),
         Input({'type': 'dynamic-upload', 'index': MATCH}, 'contents'),
         State({'type': 'dynamic-upload', 'index': MATCH}, 'filename'),
         State({'type': 'dynamic-upload', 'index': MATCH}, 'last_modified'),
@@ -95,7 +97,119 @@ def register_callbacks(app, cache):
         key = cache_key(session_id, file_type)
         cache.set(key, df.to_json())
 
-        return filename, f'Rows: {rows}, Columns: {columns}', ''
+        return filename, f'Rows: {rows}, Columns: {columns}', '', str(time.time())
+
+    @app.callback(
+        Output('metadata-type-x', 'options'),
+        Input({'type': 'store-upload', 'index': UploadFileType.METADATA}, 'data'),
+        Input('data-selector', 'value'),
+        State('session_id', 'data'),
+        prevent_initial_call=True
+    )
+    def populate_metadata_x(metadata_uploaded, dataset, session_id):
+        """Populate the metadata dropdown box for exploring the active dataset when the user either selects a mouse
+        dataset or uploads metadata"""
+
+        if ctx.triggered_id == 'data-selector':
+            if dataset in ('motor', 'visual'):
+                metadata_options = {'ttype': 'Transcriptomic Type (ttype)'}
+            else:
+                raise PreventUpdate
+        else:
+            # triggered by uploading a metadata file
+            try:
+                metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
+                metadata_options = metadata_df.columns
+            except ValueError:
+                metadata_options = {}
+        return metadata_options
+
+    @app.callback(
+        Output('graph-x', 'figure'),
+        Output('user-data-alert-x', 'children'),  # error message
+        Output('user-data-alert-x', 'is_open'),
+        Input('explore-vars', 'value'),
+        Input('metadata-type-x', 'value'),
+        State('data-selector', 'value'),
+        State({'type': 'dynamic-output', 'index': ALL}, 'children'),
+        State('session_id', 'data'),
+        prevent_initial_call=True
+    )
+    def handle_explore_vars(explore_vars, metadata_type, dataset, upload_filenames, session_id):
+        """
+        :param explore_vars:
+        :param metadata_type:
+        :param dataset:
+        :param upload_filenames:
+        :param session_id:
+        :return:
+        """
+
+        if not (explore_vars and metadata_type):
+            raise PreventUpdate
+
+        error_message = ''
+        fig = go.Figure(data={}, layout=blank_layout)
+
+        vars = [s.strip().lower() for s in explore_vars.split(',')[:2]]
+
+        if dataset in ('motor', 'visual'):
+            df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
+            df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+            metadata = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv', index_col=0)
+        elif dataset == 'upload':
+            try:
+                df_1 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
+                df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
+                metadata = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
+            except ValueError:
+                error_message = 'Two data files must be uploaded before data can be explored.'
+                return fig, error_message, bool(error_message)
+        else:
+            error_message = 'Data must be selected or uploaded before it can be explored.'
+            return fig, error_message, bool(error_message)
+
+        # convert columns to lower case
+        df_1.columns = df_1.columns.str.lower()
+        df_2.columns = df_2.columns.str.lower()
+        df_1_cols = list(df_1.columns)
+        df_2_cols = list(df_2.columns)
+        possible_cols = df_1_cols + df_2_cols
+
+        bad_vars = [v for v in vars if v.lower() not in possible_cols]
+        if bad_vars:
+            error_message = f'{bad_vars} not found in the selected data files.  Check for correct spelling.'
+            return fig, error_message, bool(error_message)
+
+        # Generate a plot
+        plot_df = pd.DataFrame()
+        if len(vars) == 1:
+            v = vars[0]
+            # Generate a box plot
+            if v in df_1_cols:
+                plot_df = df_1[v].to_frame()
+            elif v in df_2_cols:
+                plot_df = df_2[v].to_frame()
+            plot_df[metadata_type] = metadata[metadata_type]
+
+            fig = px.box(plot_df, x=metadata_type, y=v)
+
+        elif len(vars) == 2:
+            # Generate a scatter plot
+            for v in vars:
+                if v in df_1_cols:
+                    plot_df[v] = df_1[v]
+                elif v in df_2_cols:
+                    plot_df[v] = df_2[v]
+            plot_df[metadata_type] = metadata[metadata_type]
+            fig = px.scatter(plot_df, x=vars[0], y=vars[1], color=metadata_type)
+        else:
+            raise Exception('Unexpected number of vars!  Bug!')
+
+        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+
+        return fig, error_message, bool(error_message)
+
 
     @app.callback(
         Output(component_id='graph-combined', component_property='figure'),
@@ -141,36 +255,22 @@ def register_callbacks(app, cache):
         y = int(y) - 1
         z = int(z) - 1
 
-        if False:
-            df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_NMA.csv')
-            df_1['gmm_cluster'] = df_1['gmm_cluster'].astype('string')
-            Xe = np.array(df_1.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
+        # loading aligned data from cache
+        df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+        df_1['cluster'] = df_1['cluster'].astype('string')
+        Xg = np.array(df_1.drop(columns=['cluster', 'ttype']))
 
-            df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA.csv')
-            df_2['gmm_cluster'] = df_2['gmm_cluster'].astype('string')
-            Xg = np.array(df_2.drop(columns=['data', 'ttype', 'gmm_cluster', 'cellnames']))
+        df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        df_2['cluster'] = df_2['cluster'].astype('string')
+        Xe = np.array(df_2.drop(columns=['cluster', 'ttype']))
 
-        aligned = 'true'  # temporary override
-
-        if aligned == 'true':
-            # loading aligned data from cache
-            df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
-            df_1['cluster'] = df_1['cluster'].astype('string')
-            Xg = np.array(df_1.drop(columns=['cluster', 'ttype']))
-
-            df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
-            df_2['cluster'] = df_2['cluster'].astype('string')
-            Xe = np.array(df_2.drop(columns=['cluster', 'ttype']))
-
-            # load metadata dataframe (use in conjunction with metadata-type)
-            if metadata_type and dataset == 'upload':
-                # uploaded metadata
-                metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
-                # append metadata to dataframes so that it's available for visualization
-                df_1[metadata_type] = list(metadata_df[metadata_type])
-                df_2[metadata_type] = list(metadata_df[metadata_type])
-        else:
-            return go.Figure(data={}, layout=blank_layout), {}, '', str(time.time())
+        # load metadata dataframe (use in conjunction with metadata-type)
+        if metadata_type and dataset == 'upload':
+            # uploaded metadata
+            metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
+            # append metadata to dataframes so that it's available for visualization
+            df_1[metadata_type] = list(metadata_df[metadata_type])
+            df_2[metadata_type] = list(metadata_df[metadata_type])
 
 
         style = {}  # default
@@ -217,12 +317,11 @@ def register_callbacks(app, cache):
         elif plot_type in ('bibiplot', 'heatmap', 'heatmap2'):
             # These plots need raw data, not just aligned data
             if dataset in ('motor', 'visual'):
-                data_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
-                data_1 = data_1.T  # mouse data needs to have gene expression data transposed
-                data_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
-                if type(data_2.iloc[0, 0]) == str:
-                    # drop the first column if it contains strings (i.e., presumably cell names)
-                    data_2.drop(columns=data_2.columns[0], inplace=True)
+                data_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
+                data_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+                # if type(data_2.iloc[0, 0]) == str:
+                #     # drop the first column if it contains strings (i.e., presumably cell names)
+                #     data_2.drop(columns=data_2.columns[0], inplace=True)
             else:
                 # get raw data from cache
                 file_type_1 = UploadFileType.DATA_1.name
@@ -244,17 +343,9 @@ def register_callbacks(app, cache):
                 legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
                 Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
                 where the length is the value of correlation (max value 1). """
-            elif plot_type == 'heatmap':
-                # gene enrichment by cluster
-                fig = create_heatmap(dataset, df_1)
-
-                legend = f"""The gene expression levels across all cells for the top 10 differentially-expressed genes
-                for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized gene
-                expression ranked using the Wilcox Rank Sum test."""
 
             elif plot_type == 'heatmap2':
                 clusters = df_1['cluster']  # The clusters column is the same in df_1 and df_2
-                #fig = create_heatmap_general(data_1, data_2, clusters, preprocess_1, preprocess_2)
                 fig, top_enriched = create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preprocess_2,
                                                     clusters, num_clusters, label_1, label_2, num_enriched)
                 legend = f"""Feature expression levels across all cells for the top {num_enriched} differentially-expressed features
@@ -285,9 +376,11 @@ def register_callbacks(app, cache):
         State('data-selector', 'value'),
         State('preprocess_1', 'value'),
         State('preprocess_2', 'value'),
+        State('alignment-method', 'value'),
         State('ndims', 'value'),
         State('neighbors', 'value'),
         State('num_clusters', 'value'),
+        State('clustering-method', 'value'),
         # State(component_id='eig-method', component_property='value'),
         # State(component_id='eig-count', component_property='value'),
         State({'type': 'dynamic-output', 'index': ALL}, 'children'),
@@ -296,7 +389,8 @@ def register_callbacks(app, cache):
     )
     def align_and_cluster_datasets(session_id, align_clicks, cluster_clicks, dataset,
                                    preprocess_1, preprocess_2,
-                                   ndims, neighbors, num_clusters,
+                                   alignment_method, ndims, neighbors,
+                                   num_clusters, clustering_method,
                                    upload_filenames,
                                    metadata_options):
 
@@ -328,18 +422,18 @@ def register_callbacks(app, cache):
 
                 # Load mouse data and clean based on prior knowledge of structure.
 
-                df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', header=0).T
-                X1 = np.array(df_1[1:], dtype=float)  # skip gene row
+                df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
+                X1 = np.array(df_1, dtype=float)
 
-                df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
+                df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
                 # drop the first column if it contains strings
-                if type(df_2.iloc[1, 0]) == str:
-                    X2 = np.array(df_2.iloc[:, 1:], dtype=float)
-                else:
-                    X2 = np.array(df_2, dtype=float)
+                # if type(df_2.iloc[1, 0]) == str:
+                #     X2 = np.array(df_2.iloc[:, 1:], dtype=float)
+                # else:
+                X2 = np.array(df_2, dtype=float)
 
                 # Load metadata files containing ttype column
-                ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_NMA_col.csv')['ttype']
+                ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv')['ttype']
 
                 # # temporary: write sample data files
                 # df_1.to_csv(f'data/sample_geneExp.csv')
@@ -398,12 +492,21 @@ def register_callbacks(app, cache):
             X2 = preprocess(X2, preprocess_2)
 
             # Align datasets
-            proj, _ = nonlinear_manifold_alignment(X1, X2, int(ndims), int(neighbors)) #, eig_method=eig_method, eig_count=int(eig_count))
+            #proj, _ = nonlinear_manifold_alignment(X1, X2, int(ndims), int(neighbors)) #, eig_method=eig_method, eig_count=int(eig_count))
+            proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
 
             aligned_1, aligned_2 = proj
 
         # Identify clusters (generalize later with clustering parameters, alternate methods)
-        clusters = cluster_gmm(aligned_1, aligned_2, num_clusters)
+        if clustering_method == 'gmm':
+            clusters = cluster_gmm(aligned_1, aligned_2, num_clusters)
+        elif clustering_method == 'kmeans':
+            clusters = cluster_kmeans(aligned_1, aligned_2, num_clusters)
+        elif clustering_method == 'hierarchical':
+            clusters = cluster_hierarchical(aligned_1, aligned_2, num_clusters)
+        else:
+            # Should not happen
+            clusters = None
 
         # Append cluster, t_type info to aligned data in a Pandas dataframe
         aligned_1 = pd.DataFrame(aligned_1)
@@ -544,17 +647,22 @@ def register_callbacks(app, cache):
         return dcc.send_bytes(bytes_io.getvalue(), 'enriched.zip', type='application/zip')
 
     @app.callback(
-        Output('graph-page', 'className'),
         Output('about-page', 'className'),
+        Output('upload-page', 'className'),
+        Output('graph-page', 'className'),
         Input('left-panel-tabs', 'value'),
         prevent_initial_call=True,
     )
     def handle_tab_change(selected_tab):
         """Control visibility of right-pane content based on selected tab"""
+        visibility = ['hidden'] * 3
         if selected_tab == 'tab-1':
-            return 'hidden', ''
+            visibility[0] = ''
+        elif selected_tab == 'tab-2':
+            visibility[1] = ''
         else:
-            return '', 'hidden'
+            visibility[2] = ''
+        return visibility
 
     @app.callback(
         Output('left-panel-tabs', 'value'),

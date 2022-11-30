@@ -46,9 +46,9 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
     # special handling for mouse datasets
     if dataset in ('motor', 'visual'):
         # from bibiplot_motor.ipynb
-        geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp_filtered.csv', index_col=0)
+        geneExpr = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
         geneExpr = pd.DataFrame(geneExpr, dtype='int')
-        count = scipy.sparse.csr_matrix(geneExpr).T  # transpose to put cells in rows, genes in columns
+        count = scipy.sparse.csr_matrix(geneExpr)  #.T  # transpose to put cells in rows, genes in columns
         seqDepth = np.sum(count, axis=1)  # sum gene enrichments across columns
         seqDepth = np.array(seqDepth)  # convert from matrix to vector
         X = np.log10(count / seqDepth * np.median(seqDepth) + 1)  # normalize  (not clear that multiplying by the median adds much value)
@@ -56,12 +56,12 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
         X = X - X.mean(axis=0)
         X = X / np.std(X, axis=0)
 
-        labels_X = geneExpr.index.array  # gene names
+        labels_X = geneExpr.columns.tolist()  # gene names
 
-        ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature_filtered.csv')
-        if type(ephysY.iloc[0, 0]) == str:
-            # drop the first column if it contains strings (i.e., presumably cell names)
-            ephysY.drop(columns=ephysY.columns[0], inplace=True)
+        ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+        # if type(ephysY.iloc[0, 0]) == str:
+        #     # drop the first column if it contains strings (i.e., presumably cell names)
+        #     ephysY.drop(columns=ephysY.columns[0], inplace=True)
         Y = ephysY.to_numpy() - np.mean(ephysY.to_numpy(), axis=0)
         Y = Y / np.std(Y, axis=0)
 
