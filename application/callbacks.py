@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 from plots import *
-from operations.alignment import alignment #nonlinear_manifold_alignment
+from operations.alignment import alignment, UnexpectedAlignmentMethodException #nonlinear_manifold_alignment
 from operations.clustering import cluster_gmm, cluster_kmeans, cluster_hierarchical
 from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
@@ -62,11 +62,13 @@ def register_callbacks(app, cache):
     @app.callback(
         Output('preprocess-label-1', 'children'),
         Output('preprocess-label-2', 'children'),
+        Output('explore-label-1', 'children'),
+        Output('explore-label-2', 'children'),
         Input('store-label-1', 'data'),
         Input('store-label-2', 'data')
     )
     def update_preprocessing_labels(label_1, label_2):
-        return label_1, label_2
+        return label_1, label_2, label_1, label_2
 
     @app.callback(
         Output({'type': 'dynamic-output', 'index': MATCH}, 'children'),
@@ -124,22 +126,95 @@ def register_callbacks(app, cache):
                 metadata_options = {}
         return metadata_options
 
+
+    @app.callback(
+        Output('explore-var1', 'options'),
+        Output('explore-var2', 'options'),
+        Input({'type': 'store-upload', 'index': UploadFileType.DATA_1}, 'data'),
+        Input({'type': 'store-upload', 'index': UploadFileType.DATA_2}, 'data'),
+        Input('data-selector', 'value'),
+        State('session_id', 'data'),
+        State('explore-var1', 'options'),
+        State('explore-var2', 'options'),
+        prevent_initial_call=True
+    )
+    def populate_explore_vars(d1_uploaded, d2_uploaded, dataset, session_id, options_1, options_2):
+        """Populate the feature dropdowns in the explore data section of the data tab"""
+
+        if ctx.triggered_id == 'data-selector':
+            if dataset in ('motor', 'visual'):
+                df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
+                df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+                return sorted(df_1.columns), sorted(df_2.columns)
+            else:
+                raise PreventUpdate
+        elif ctx.triggered_id == {'type': 'store-upload', 'index': UploadFileType.DATA_1}:
+            df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
+            return sorted(df.columns), options_2
+        elif ctx.triggered_id == {'type': 'store-upload', 'index': UploadFileType.DATA_2}:
+            df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
+            return options_1, sorted(df.columns)
+        else:
+            raise PreventUpdate
+
+
+    @app.callback(
+        Output('explore-vars', 'value'),
+        Input('use-explore-var1', 'n_clicks'),
+        Input('use-explore-var2', 'n_clicks'),
+        State('explore-var1', 'value'),
+        State('explore-var2', 'value'),
+        State('explore-vars', 'value'),
+        prevent_initial_call=True
+    )
+    def select_explore_var(use_btn_1, use_btn_2, var_1, var_2, explore_vars):
+        """ Copy a variable to the select box"""
+
+        if explore_vars:
+            xv = [s.strip() for s in explore_vars.split(',')]
+        else:
+            xv = []
+
+        if ctx.triggered_id == 'use-explore-var1':
+            if var_1:
+                xv = xv[-1:] + [var_1]
+            else:
+                raise PreventUpdate
+        elif ctx.triggered_id == 'use-explore-var2':
+            if var_2:
+                xv = xv[-1:] + [var_2]
+            else:
+                raise PreventUpdate
+
+        return ', '.join(xv)
+
+
     @app.callback(
         Output('graph-x', 'figure'),
         Output('user-data-alert-x', 'children'),  # error message
         Output('user-data-alert-x', 'is_open'),
         Input('explore-vars', 'value'),
         Input('metadata-type-x', 'value'),
+        Input('explore-preprocess', 'value'),
+        Input('explore-log-axis', 'value'),
         State('data-selector', 'value'),
+        State('preprocess_1', 'value'),
+        State('preprocess_2', 'value'),
         State({'type': 'dynamic-output', 'index': ALL}, 'children'),
         State('session_id', 'data'),
         prevent_initial_call=True
     )
-    def handle_explore_vars(explore_vars, metadata_type, dataset, upload_filenames, session_id):
+    def handle_explore_vars(explore_vars, metadata_type, apply_preprocess, log_axis,
+                            dataset, preprocess_1, preprocess_2, upload_filenames, session_id):
         """
+
         :param explore_vars:
         :param metadata_type:
+        :param apply_preprocess:
+        :param log_axis:
         :param dataset:
+        :param preprocess_1:
+        :param preprocess_2:
         :param upload_filenames:
         :param session_id:
         :return:
@@ -183,26 +258,23 @@ def register_callbacks(app, cache):
 
         # Generate a plot
         plot_df = pd.DataFrame()
-        if len(vars) == 1:
-            v = vars[0]
-            # Generate a box plot
+
+        apply_preprocess = apply_preprocess == ['preprocess']
+        for v in vars:
             if v in df_1_cols:
-                plot_df = df_1[v].to_frame()
+                plot_df[v] = preprocess(df_1[v], preprocess_1) if apply_preprocess else df_1[v]
             elif v in df_2_cols:
-                plot_df = df_2[v].to_frame()
-            plot_df[metadata_type] = metadata[metadata_type]
+                plot_df[v] = preprocess(df_2[v], preprocess_2) if apply_preprocess else df_2[v]
+        plot_df[metadata_type] = metadata[metadata_type]
 
-            fig = px.box(plot_df, x=metadata_type, y=v)
-
+        if len(vars) == 1:
+            # Generate a box plot
+            fig = px.box(plot_df, x=metadata_type, y=vars[0])
         elif len(vars) == 2:
             # Generate a scatter plot
-            for v in vars:
-                if v in df_1_cols:
-                    plot_df[v] = df_1[v]
-                elif v in df_2_cols:
-                    plot_df[v] = df_2[v]
-            plot_df[metadata_type] = metadata[metadata_type]
-            fig = px.scatter(plot_df, x=vars[0], y=vars[1], color=metadata_type)
+            log_axis = log_axis or []  # handle log_axis == None
+            fig = px.scatter(plot_df, x=vars[0], y=vars[1], color=metadata_type,
+                             log_x='X' in log_axis, log_y='Y' in log_axis)
         else:
             raise Exception('Unexpected number of vars!  Bug!')
 
@@ -493,7 +565,10 @@ def register_callbacks(app, cache):
 
             # Align datasets
             #proj, _ = nonlinear_manifold_alignment(X1, X2, int(ndims), int(neighbors)) #, eig_method=eig_method, eig_count=int(eig_count))
-            proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
+            try:
+                proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
+            except UnexpectedAlignmentMethodException:
+                raise PreventUpdate
 
             aligned_1, aligned_2 = proj
 
@@ -645,6 +720,15 @@ def register_callbacks(app, cache):
             zf.writestr(f'enriched_{labels[1]}.csv', df_2.to_csv())
 
         return dcc.send_bytes(bytes_io.getvalue(), 'enriched.zip', type='application/zip')
+
+    @app.callback(
+        Output('download-sample-data', 'data'),
+        Input('sample-data-download-button', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def download_sample_data(n_clicks):
+        return dcc.send_file('./assets/mouse_motor_cortex.zip')
+
 
     @app.callback(
         Output('about-page', 'className'),

@@ -352,17 +352,47 @@ def get_layout():
                                                     'to see a set of boxplots (one variable) or a scatter plot '
                                                     '(two variables).'
                                                 ], target='explore-tooltip'),
-                                                dcc.Input(id='explore-vars',
-                                                          type='text',
-                                                          debounce=True,
-                                                          placeholder='X1 or X1,X2'),
-                                                dcc.Dropdown(
-                                                    id='metadata-type-x',
-                                                    options={
-                                                        'ttype': 'Transcriptomic Type'
-                                                    },
-                                                    placeholder='Select metadata...',
-                                                ),
+                                                html.Label([
+                                                    html.Span('', id='explore-label-1'),
+                                                    ': ',
+                                                    html.Br(),
+                                                    dcc.Dropdown(id='explore-var1', placeholder='Feature 1'),
+                                                    html.Button(id='use-explore-var1', children='+'),
+                                                ]),
+                                                html.Label([
+                                                    html.Span('', id='explore-label-2'),
+                                                    ': ',
+                                                    html.Br(),
+                                                    dcc.Dropdown(id='explore-var2', placeholder='Feature 2'),
+                                                    html.Button(id='use-explore-var2', children='+')
+                                                ]),
+                                                html.Label([
+                                                    'X, Y: ',
+                                                    dcc.Input(id='explore-vars',
+                                                              type='text',
+                                                              debounce=True,
+                                                              placeholder='X1 or X1,X2'),
+                                                    dcc.Checklist(id='explore-preprocess',
+                                                                  options=[{'label': 'Preprocess', 'value': 'preprocess'}]),
+
+                                                    html.Label([
+                                                        'Use log axis:',
+                                                        dcc.Checklist(id='explore-log-axis',
+                                                                      options=['X', 'Y'], inline=True),
+                                                    ], id='explore-log-axis-label'),
+
+                                                ]),
+                                                html.Label([
+                                                    'Metadata: ',
+                                                    dcc.Dropdown(
+                                                        id='metadata-type-x',
+                                                        options={
+                                                            'ttype': 'Transcriptomic Type'
+                                                        },
+                                                        placeholder='Select metadata...',
+                                                    ),
+                                                ]),
+
                                                 html.Br(),
                                             ]),
 
@@ -444,7 +474,7 @@ def get_layout():
                                                             options={
                                                                 'gmm': 'Gaussian Mixture Model',
                                                                 'kmeans': 'k-means',
-                                                                'hierarchical': 'Ward hierarchical'
+                                                                'hierarchical': 'Hierarchical'
                                                             },
                                                             value='gmm'
                                                         ),
@@ -639,6 +669,10 @@ def get_layout():
                                                'Files must have consistent cell (row) order.'
                                                ),
                                         html.P('Currently (during application development), only the first 1000 rows of uploaded data files are used.'),
+                                        html.P([
+                                            'A sample dataset may be downloaded here: ',
+                                            html.Button('Sample Data (Mouse motor cortex)', id='sample-data-download-button'),
+                                            dcc.Download(id='download-sample-data')]),
                                         html.H5('Preprocessing'),
                                         html.P('Optionally, select a preprocessing operation to be performed '
                                                'on each modality prior to alignment.  The currently supported '

@@ -9,10 +9,17 @@ from .maninetcluster.neighborhood import neighbor_graph, laplacian
 from .maninetcluster.distance import SquaredL2
 from .maninetcluster.correspondence import Correspondence
 from .maninetcluster.util import Timer
-from .mmd_ma_helper import mmd_ma_helper
 
+from sklearn.decomposition import PCA
+
+from .mmd_ma_helper import mmd_ma_helper
 from unioncom import UnionCom
+
 from functools import reduce
+
+
+class UnexpectedAlignmentMethodException(Exception):
+    pass
 
 
 def alignment(method, X, Y, num_dims, neighbors=2):
@@ -24,6 +31,19 @@ def alignment(method, X, Y, num_dims, neighbors=2):
     'mmdma': 'MMD-MA'
 
     """
+
+    # use PCA to reduce dimension of input data
+
+
+    USE_PCA = True
+    if USE_PCA:
+        #pca = PCA(.90)  # choose number of principal components to retain 95% of the variance
+        pca = PCA(min(50, X.shape[1]))
+        X = pca.fit_transform(X)
+        print(pca.n_components_, sum(pca.explained_variance_ratio_))
+        pca = PCA(min(50, Y.shape[1]))
+        Y = pca.fit_transform(Y)
+        print(pca.n_components_, sum(pca.explained_variance_ratio_))
 
 
     if method in ('lma', 'nlma'):
@@ -37,20 +57,22 @@ def alignment(method, X, Y, num_dims, neighbors=2):
         elif method == 'nlma':
             proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method, eig_count=eig_count)
     elif method == 'unioncom':
-        uc = UnionCom.UnionCom(output_dim=num_dims)
-        proj = uc.fit_transform(dataset=[X, Y])
+        pass
+        # uc = UnionCom.UnionCom(output_dim=num_dims)
+        # proj = uc.fit_transform(dataset=[X, Y])
     elif method == 'cca':
         corr = Correspondence(matrix=np.eye(len(X)))
         proj = CCA(X, Y, corr, num_dims).project(X, Y, num_dims)
     elif method == 'mmdma':
-        # Perform MMD-MA alignment
-        X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
-        Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
-        X = np.matmul(X, X.T)
-        Y = np.matmul(Y, Y.T)
-        proj, history, ab = mmd_ma_helper(X, Y, p=32)
+        pass
+        # # Perform MMD-MA alignment
+        # X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
+        # Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
+        # X = np.matmul(X, X.T)
+        # Y = np.matmul(Y, Y.T)
+        # proj, history, ab = mmd_ma_helper(X, Y, p=32)
     else:
-        raise Exception('unexpected alignment method')
+        raise UnexpectedAlignmentMethodException()
     return proj
 
 

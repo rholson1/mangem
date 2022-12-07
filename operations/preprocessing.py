@@ -16,5 +16,8 @@ def preprocess(X, method):
 
 
 def scale_df(X):
-    X.iloc[:, 0:-1] = X.iloc[:, 0:-1].apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+    if len(X.shape) > 1:
+        X.iloc[:, 0:-1] = X.iloc[:, 0:-1].apply(lambda x: (x - x.mean()) / x.std(), axis=0)
+    else:
+        X = (X - X.mean()) / X.std()
     return X

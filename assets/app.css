@@ -192,6 +192,28 @@ label, legend {
   justify-content: space-between;
   height: 100%;
 }
+
+
+
+#explore-var1, #explore-var2 {
+  display: inline-block;
+  width: 50%;
+}
+
+#use-explore-var1, #use-explore-var2{
+  position: relative;
+  top: -12px;
+  height: 24px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+#explore-preprocess, #explore-log-axis, #explore-log-axis-label{
+  display: inline-block;
+}
+#explore-log-axis-label {
+  margin-left: 25px;
+}
+
 .tab-parent, .tab-content {
   height: 100%;
 }
