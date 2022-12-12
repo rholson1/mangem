@@ -17,37 +17,6 @@ CACHE_CONFIG = {
 cache = Cache()
 cache.init_app(server, config=CACHE_CONFIG)
 
-
-app.index_string = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-YHSJH8FV0K"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-        
-          gtag('config', 'G-YHSJH8FV0K');
-        </script>
-
-        {%metas%}
-        <title>{%title%}</title>
-        {%favicon%}
-        {%css%}
-    </head>
-    <body>
-        {%app_entry%}
-        <footer>
-            {%config%}
-            {%scripts%}
-            {%renderer%}
-        </footer>
-    </body>
-</html>
-"""
-
 app.layout = layout.get_layout()
 register_callbacks(app, cache)
 
