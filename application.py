@@ -1,12 +1,12 @@
 from dash import Dash
 from flask_caching import Cache
 import dash_bootstrap_components as dbc
-from application import layout
-from application.callbacks import register_callbacks
+from app_main import layout
+from app_main.callbacks import register_callbacks
 
 app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME])
 app.title = 'Multimodal Alignment'
-server = app.server
+application = app.server
 
 CACHE_CONFIG = {
     'CACHE_TYPE': 'FileSystemCache',
@@ -15,7 +15,7 @@ CACHE_CONFIG = {
     'CACHE_DEFAULT_TIMEOUT': 7200  # Default timeout, seconds
 }
 cache = Cache()
-cache.init_app(server, config=CACHE_CONFIG)
+cache.init_app(application, config=CACHE_CONFIG)
 
 app.layout = layout.get_layout()
 register_callbacks(app, cache)

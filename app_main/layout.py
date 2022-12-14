@@ -4,8 +4,8 @@ import dash_bootstrap_components as dbc
 import dash_dangerously_set_inner_html
 import uuid
 
-from application.settings import appname, HTTP_ROOT
-from application.constants import UploadFileType, blank_layout, color_types
+from app_main.settings import appname, HTTP_ROOT
+from app_main.constants import UploadFileType, blank_layout, color_types
 
 
 def get_layout():

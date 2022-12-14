@@ -1,7 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from application.constants import color_types, marker_size_3d
+from app_main.constants import color_types, marker_size_3d
 
 
 def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):

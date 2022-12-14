@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
-from application.constants import color_types
+from app_main.constants import color_types
 from operations.preprocessing import preprocess
 
 

@@ -6,8 +6,8 @@ import plotly.graph_objects as go
 import numpy as np
 import scipy.spatial.distance as sd
 from operations.alignment import calc_domainAveraged_FOSCTTM
-from application.utilities import df_to_data
-from application.constants import dataset_titles, marker_size_3d
+from app_main.utilities import df_to_data
+from app_main.constants import dataset_titles, marker_size_3d
 
 
 def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):

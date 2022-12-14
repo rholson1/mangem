@@ -13,9 +13,9 @@ from operations.clustering import cluster_gmm, cluster_kmeans, cluster_hierarchi
 from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
 
-from application.settings import cell_limit
-from application.utilities import safe_filenames, cache_key
-from application.constants import UploadFileType, blank_layout
+from app_main.settings import cell_limit
+from app_main.utilities import safe_filenames, cache_key
+from app_main.constants import UploadFileType, blank_layout
 
 import io
 import base64
