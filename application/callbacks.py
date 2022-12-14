@@ -128,6 +128,31 @@ def register_callbacks(app, cache):
 
 
     @app.callback(
+        Output('metadata-value', 'options'),
+        Input('metadata-type-x', 'value'),
+        Input('data-selector', 'value'),
+        State({'type': 'dynamic-output', 'index': ALL}, 'children'),
+        State('session_id', 'data'),
+        prevent_initial_call=True
+    )
+    def populate_metadata_value(metadata_type, dataset, upload_filenames, session_id):
+        """Set the options for a dropdown as possible values of the selected metadata type"""
+
+        if ctx.triggered_id == 'data-selector':
+            # might as well load values from the metadata file
+            if dataset in ('motor', 'visual'):
+                ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv')['ttype']
+                return ttype.unique()
+        else:
+            # triggered by a change in metadata type
+            if upload_filenames[2]:  # only try to read metadata from cache if a file has been uploaded
+                metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
+                metadata = metadata_df[metadata_type]
+                return metadata.unique()
+        return {}
+
+
+    @app.callback(
         Output('explore-var1', 'options'),
         Output('explore-var2', 'options'),
         Input({'type': 'store-upload', 'index': UploadFileType.DATA_1}, 'data'),
@@ -195,6 +220,7 @@ def register_callbacks(app, cache):
         Output('user-data-alert-x', 'is_open'),
         Input('explore-vars', 'value'),
         Input('metadata-type-x', 'value'),
+        Input('metadata-value', 'value'),
         Input('explore-preprocess', 'value'),
         Input('explore-log-axis', 'value'),
         State('data-selector', 'value'),
@@ -204,7 +230,7 @@ def register_callbacks(app, cache):
         State('session_id', 'data'),
         prevent_initial_call=True
     )
-    def handle_explore_vars(explore_vars, metadata_type, apply_preprocess, log_axis,
+    def handle_explore_vars(explore_vars, metadata_type, metadata_value, apply_preprocess, log_axis,
                             dataset, preprocess_1, preprocess_2, upload_filenames, session_id):
         """
 
@@ -267,13 +293,18 @@ def register_callbacks(app, cache):
                 plot_df[v] = preprocess(df_2[v], preprocess_2) if apply_preprocess else df_2[v]
         plot_df[metadata_type] = metadata[metadata_type]
 
+        if metadata_value:
+            plot_df_filtered = plot_df.loc[plot_df[metadata_type] == metadata_value]
+        else:
+            plot_df_filtered = plot_df
+
         if len(vars) == 1:
             # Generate a box plot
-            fig = px.box(plot_df, x=metadata_type, y=vars[0])
+            fig = px.box(plot_df_filtered, x=metadata_type, y=vars[0])
         elif len(vars) == 2:
             # Generate a scatter plot
             log_axis = log_axis or []  # handle log_axis == None
-            fig = px.scatter(plot_df, x=vars[0], y=vars[1], color=metadata_type,
+            fig = px.scatter(plot_df_filtered, x=vars[0], y=vars[1], color=metadata_type,
                              log_x='X' in log_axis, log_y='Y' in log_axis)
         else:
             raise Exception('Unexpected number of vars!  Bug!')

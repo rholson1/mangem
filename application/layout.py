@@ -392,7 +392,15 @@ def get_layout():
                                                         placeholder='Select metadata...',
                                                     ),
                                                 ]),
-
+                                                html.Label([
+                                                    'Metadata value: ',
+                                                    dcc.Dropdown(
+                                                        id='metadata-value',
+                                                        options={
+                                                        },
+                                                        placeholder='Select value...',
+                                                    ),
+                                                ]),
                                                 html.Br(),
                                             ]),
 
