@@ -794,6 +794,13 @@ def register_callbacks(app, cache):
         else:
             raise PreventUpdate
 
+    @app.callback(
+        Output('flowchart-img', 'src'),
+        Input('url', 'pathname')
+    )
+    def set_img_src(url_path):
+        return f'{url_path}assets/cover_figure.png'
+
 
     # @app.callback(
     #     Output(component_id='loading-output-2', component_property='children'),

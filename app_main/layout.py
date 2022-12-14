@@ -12,6 +12,7 @@ def get_layout():
     session_id = str(uuid.uuid4())
 
     layout = html.Div(children=[
+        dcc.Location(id='url', refresh=False),
         dcc.Store(id='session_id', data=session_id),
         dcc.Store(id='store-data_selected', data='0'),
         dcc.Store(id='store-aligned', data='0'),
@@ -655,7 +656,7 @@ def get_layout():
                             children=[
                                 html.Img(src=f'{HTTP_ROOT}/assets/cover_figure.png',
                                          alt='Manifold alignment and clustering flow chart',
-                                         className='tab-image'),
+                                         className='tab-image', id='flowchart-img'),
                                 # html.P(children=[
                                 #     'This application demonstrates use of nonlinear manifold learning to '
                                 #     'align single cell multi-modal data sets in a low-dimension latent space, '
