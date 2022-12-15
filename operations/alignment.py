@@ -31,17 +31,14 @@ def alignment(method, X, Y, num_dims, neighbors=2):
     'mmdma': 'MMD-MA'
 
     """
-
-    # use PCA to reduce dimension of input data
-
-
+    # Use PCA to reduce dimension
     USE_PCA = True
     if USE_PCA:
-        #pca = PCA(.90)  # choose number of principal components to retain 95% of the variance
-        pca = PCA(min(50, X.shape[1]))
+        pca = PCA(.90)  # choose number of principal components to retain 95% of the variance
+        #pca = PCA(min(50, X.shape[1]))
         X = pca.fit_transform(X)
         print(pca.n_components_, sum(pca.explained_variance_ratio_))
-        pca = PCA(min(50, Y.shape[1]))
+        #pca = PCA(min(50, Y.shape[1]))
         Y = pca.fit_transform(Y)
         print(pca.n_components_, sum(pca.explained_variance_ratio_))
 
@@ -58,19 +55,23 @@ def alignment(method, X, Y, num_dims, neighbors=2):
             proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method, eig_count=eig_count)
     elif method == 'unioncom':
         pass
-        # uc = UnionCom.UnionCom(output_dim=num_dims)
-        # proj = uc.fit_transform(dataset=[X, Y])
+        uc = UnionCom.UnionCom(output_dim=num_dims, epoch_pd=20, epoch_DNN=10)
+        proj = uc.fit_transform(dataset=[X, Y])
     elif method == 'cca':
         corr = Correspondence(matrix=np.eye(len(X)))
         proj = CCA(X, Y, corr, num_dims).project(X, Y, num_dims)
     elif method == 'mmdma':
         pass
-        # # Perform MMD-MA alignment
-        # X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
-        # Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
-        # X = np.matmul(X, X.T)
-        # Y = np.matmul(Y, Y.T)
-        # proj, history, ab = mmd_ma_helper(X, Y, p=32)
+
+
+
+
+        # Perform MMD-MA alignment
+        X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
+        Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
+        X = np.matmul(X, X.T)
+        Y = np.matmul(Y, Y.T)
+        proj, history, ab = mmd_ma_helper(X, Y, p=num_dims, max_iterations=100, training_rate=.0001)  # p=32, training_rate=.00005
     else:
         raise UnexpectedAlignmentMethodException()
     return proj

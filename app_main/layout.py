@@ -430,8 +430,8 @@ def get_layout():
                                                         {'label': 'Linear Manifold Alignment', 'value': 'lma'},
                                                         {'label': 'Nonlinear Manifold Alignment', 'value': 'nlma'},
                                                         {'label': 'Canonical Correlation Analysis', 'value': 'cca'},
-                                                        {'label': 'Manifold Alignment with Maximum Mean Discrepancy', 'value': 'mmdma', 'disabled': True},
-                                                        {'label': 'UnionCom', 'value': 'unioncom', 'disabled': True},
+                                                        {'label': 'Manifold Alignment with Maximum Mean Discrepancy', 'value': 'mmdma', 'disabled': False},
+                                                        {'label': 'UnionCom', 'value': 'unioncom', 'disabled': False},
                                                     ])
                                                 ]),
                                                 html.Label([
