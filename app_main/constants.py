@@ -3,7 +3,7 @@ from enum import Enum
 marker_size_3d = 1.25  #0.75
 
 #color_types = {'cluster': 'Cluster', 'ttype': 't-type'}
-color_types = {'cluster': 'Cluster', 'metadata': 'Metadata'}
+color_types = {'cluster': 'Cross-modal Cluster', 'metadata': 'Metadata'}
 
 dataset_titles = {
     'motor': 'Mouse Motor Cortex',

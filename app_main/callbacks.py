@@ -799,7 +799,7 @@ def register_callbacks(app, cache):
         Input('url', 'pathname')
     )
     def set_img_src(url_path):
-        return f'{url_path}assets/cover_figure.png'
+        return f'{url_path.rstrip("/")}/assets/cover_figure.png'
 
 
     # @app.callback(

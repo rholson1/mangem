@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 import dash_dangerously_set_inner_html
 import uuid
 
-from app_main.settings import appname, HTTP_ROOT
+from app_main.settings import appname
 from app_main.constants import UploadFileType, blank_layout, color_types
 
 
@@ -77,10 +77,47 @@ def get_layout():
                                             'For questions, contact ',
                                             html.A('Daifeng Wang, Ph.D.', href='mailto:daifeng.wang@wisc.edu'),
                                         ]),
-                                        html.P(
+                                        html.P([
                                             html.A(href='https://mediaspace.wisc.edu/media/DemoA+Manifold+Alignment+of+Single+Cell+Multi-modal+Data/1_mm61ps0r',
                                                    children=['Video Demo'], target='_blank'),
-                                        )
+                                            ' for an earlier version of this app.']
+                                        ),
+                                        html.H3('App compatibility'),
+                                        html.P('This app has been tested on the following operating systems and browsers'),
+                                        html.Table(id='compat-table', children=[
+                                            html.Thead(
+                                                html.Tr([
+                                                    html.Th('OS'),
+                                                    html.Th('Chrome'),
+                                                    html.Th('Edge'),
+                                                    html.Th('Firefox'),
+                                                    html.Th('Safari')
+                                                ]),
+                                            ),
+                                            html.Tbody([
+                                                html.Tr([
+                                                    html.Th('Linux'),
+                                                    html.Td('x'),
+                                                    html.Td(''),
+                                                    html.Td('x'),
+                                                    html.Td('')
+                                                ]),
+                                                html.Tr([
+                                                    html.Th('MacOS'),
+                                                    html.Td('x'),
+                                                    html.Td(''),
+                                                    html.Td(''),
+                                                    html.Td('x')
+                                                ]),
+                                                html.Tr([
+                                                    html.Th('Windows'),
+                                                    html.Td('x'),
+                                                    html.Td('x'),
+                                                    html.Td('x'),
+                                                    html.Td('')
+                                                ]),
+                                            ])
+                                        ])
                                     ]
                                 ),
 
@@ -529,11 +566,11 @@ def get_layout():
                                                         # 'alignment': 'Dataset alignment',
                                                         # 'alignment-error': 'Alignment error metrics',
                                                         'alignment-combo': 'Alignment',
-                                                        'separate2': 'Separate 2-D plots',
-                                                        'separate3': 'Separate 3-D plots',
-                                                        'bibiplot': 'Bibiplot',
+                                                        'separate2': 'Aligned Cells (2D)',
+                                                        'separate3': 'Aligned Cells (3D)',
+                                                        'bibiplot': 'Top Feature Correlation with Latent Space (Bibiplot)',
                                                         # 'heatmap': 'Gene enrichment by cluster [Mouse cortex]',
-                                                        'heatmap2': 'Cluster-Specific Feature Expression'
+                                                        'heatmap2': 'Cross-modal Cluster Feature Expression (Heatmap)'
                                                     },
                                                     value='alignment'
                                                 ),
@@ -575,8 +612,8 @@ def get_layout():
                                                                       step=1,
                                                                       value=3,
                                                                       className='component_input')]),
-                                                html.H3('Cluster-specific feature expression'),
-                                                html.H4('Features per cluster to identify'),
+                                                html.H3('Cross-modal Cluster Feature Expression'),
+                                                html.H4('Number of Top Features per cluster'),
                                                 dcc.Input(id='num_enriched',
                                                           type='number',
                                                           min=1,
@@ -654,7 +691,7 @@ def get_layout():
                         html.Div(
                             id='about-page',
                             children=[
-                                html.Img(src=f'{HTTP_ROOT}/assets/cover_figure.png',
+                                html.Img(src='',
                                          alt='Manifold alignment and clustering flow chart',
                                          className='tab-image', id='flowchart-img'),
                                 # html.P(children=[

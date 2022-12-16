@@ -1,4 +1,3 @@
-appname = 'Manifold Alignment of Single Cell Multi-modal Data'
+appname = 'Multimodal Alignment and Analysis of Neuronal Gene Expression, Electrophysiology and Morphology (MANGEM)'
 
-HTTP_ROOT = '/multimodal'
 cell_limit = 1000  # limit to 1000 cells for performance reasons

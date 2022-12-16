@@ -214,6 +214,10 @@ label, legend {
   margin-left: 25px;
 }
 
+#compat-table{
+  text-align: center;
+}
+
 .tab-parent, .tab-content {
   height: 100%;
 }
