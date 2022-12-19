@@ -103,6 +103,7 @@ def register_callbacks(app, cache):
 
     @app.callback(
         Output('metadata-type-x', 'options'),
+        Output('metadata-type-x', 'value'),
         Input({'type': 'store-upload', 'index': UploadFileType.METADATA}, 'data'),
         Input('data-selector', 'value'),
         State('session_id', 'data'),
@@ -110,13 +111,14 @@ def register_callbacks(app, cache):
     )
     def populate_metadata_x(metadata_uploaded, dataset, session_id):
         """Populate the metadata dropdown box for exploring the active dataset when the user either selects a mouse
-        dataset or uploads metadata"""
+        dataset or uploads metadata.  The value of the dropdown should always be cleared."""
 
         if ctx.triggered_id == 'data-selector':
             if dataset in ('motor', 'visual'):
                 metadata_options = {'ttype': 'Transcriptomic Type (ttype)'}
             else:
-                raise PreventUpdate
+                metadata_options = {}
+                #raise PreventUpdate
         else:
             # triggered by uploading a metadata file
             try:
@@ -124,7 +126,7 @@ def register_callbacks(app, cache):
                 metadata_options = metadata_df.columns
             except ValueError:
                 metadata_options = {}
-        return metadata_options
+        return metadata_options, ''
 
 
     @app.callback(
@@ -138,53 +140,58 @@ def register_callbacks(app, cache):
     def populate_metadata_value(metadata_type, dataset, upload_filenames, session_id):
         """Set the options for a dropdown as possible values of the selected metadata type"""
 
-        if ctx.triggered_id == 'data-selector':
-            # might as well load values from the metadata file
+        if ctx.triggered_id == 'metadata-type-x':
             if dataset in ('motor', 'visual'):
                 ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv')['ttype']
                 return ttype.unique()
-        else:
             # triggered by a change in metadata type
             if upload_filenames[2]:  # only try to read metadata from cache if a file has been uploaded
                 metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
                 metadata = metadata_df[metadata_type]
                 return metadata.unique()
-        return {}
+        else:
+            # always clear dropdown when changing datasets
+            return {}
 
 
     @app.callback(
         Output('explore-var1', 'options'),
         Output('explore-var2', 'options'),
+        Output('explore-var1', 'value'),
+        Output('explore-var2', 'value'),
         Input({'type': 'store-upload', 'index': UploadFileType.DATA_1}, 'data'),
         Input({'type': 'store-upload', 'index': UploadFileType.DATA_2}, 'data'),
         Input('data-selector', 'value'),
         State('session_id', 'data'),
         State('explore-var1', 'options'),
         State('explore-var2', 'options'),
+        State('explore-var1', 'value'),
+        State('explore-var2', 'value'),
         prevent_initial_call=True
     )
-    def populate_explore_vars(d1_uploaded, d2_uploaded, dataset, session_id, options_1, options_2):
+    def populate_explore_vars(d1_uploaded, d2_uploaded, dataset, session_id, options_1, options_2, ev_1, ev_2):
         """Populate the feature dropdowns in the explore data section of the data tab"""
 
         if ctx.triggered_id == 'data-selector':
             if dataset in ('motor', 'visual'):
                 df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
                 df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
-                return sorted(df_1.columns), sorted(df_2.columns)
+                return sorted(df_1.columns), sorted(df_2.columns), '', ''
             else:
-                raise PreventUpdate
+                return {}, {}, '', ''
         elif ctx.triggered_id == {'type': 'store-upload', 'index': UploadFileType.DATA_1}:
             df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
-            return sorted(df.columns), options_2
+            return sorted(df.columns), options_2, '', ev_2
         elif ctx.triggered_id == {'type': 'store-upload', 'index': UploadFileType.DATA_2}:
             df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
-            return options_1, sorted(df.columns)
+            return options_1, sorted(df.columns), ev_1, ''
         else:
-            raise PreventUpdate
+            return {}, {}, '', ''
 
 
     @app.callback(
         Output('explore-vars', 'value'),
+        Input('data-selector', 'value'),
         Input('use-explore-var1', 'n_clicks'),
         Input('use-explore-var2', 'n_clicks'),
         State('explore-var1', 'value'),
@@ -192,7 +199,7 @@ def register_callbacks(app, cache):
         State('explore-vars', 'value'),
         prevent_initial_call=True
     )
-    def select_explore_var(use_btn_1, use_btn_2, var_1, var_2, explore_vars):
+    def select_explore_var(dataset, use_btn_1, use_btn_2, var_1, var_2, explore_vars):
         """ Copy a variable to the select box"""
 
         if explore_vars:
@@ -210,6 +217,9 @@ def register_callbacks(app, cache):
                 xv = xv[-1:] + [var_2]
             else:
                 raise PreventUpdate
+        elif ctx.triggered_id == 'data-selector':
+            # always clear field when changing datasets
+            xv = []
 
         return ', '.join(xv)
 
@@ -246,11 +256,14 @@ def register_callbacks(app, cache):
         :return:
         """
 
-        if not (explore_vars and metadata_type):
-            raise PreventUpdate
+
 
         error_message = ''
         fig = go.Figure(data={}, layout=blank_layout)
+
+        if not (explore_vars and metadata_type):
+            return fig, error_message, bool(error_message)
+            #raise PreventUpdate
 
         vars = [s.strip().lower() for s in explore_vars.split(',')[:2]]
 
