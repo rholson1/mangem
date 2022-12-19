@@ -7,6 +7,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import scale
 from operations.preprocessing import preprocess
+from app_main.constants import plot_font_size, plot_title_font_size
 
 
 def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cluster, num_clusters,
@@ -66,7 +67,10 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
         fig.update_xaxes(showticklabels=False, row=2, col=col)
         fig.update_yaxes(autorange='reversed', row=2, col=col)
 
-    fig.update_layout(title_text=f'Cluster-Specific Feature Expression')
+    fig.update_layout(title_text=f'Cross-modal Cluster Feature Expression',
+                      #font_size=plot_font_size,
+                      title_font_size=plot_title_font_size)
+    fig.update_annotations(font_size=plot_title_font_size)
 
     return fig, top_enriched
 

@@ -1,7 +1,8 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from app_main.constants import color_types, marker_size_3d
+from app_main.constants import color_types, marker_size_3d, plot_font_size, plot_title_font_size
+
 
 
 def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):
@@ -54,7 +55,10 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):
     fig.update_xaxes(matches='x')
     fig.update_yaxes(matches='y')
 
-    fig.update_layout(title_text=f'2D projections in latent space')
+    fig.update_layout(title_text=f'Aligned Cells (2D)',
+                      font_size=plot_font_size,
+                      title_font_size=plot_title_font_size)
+    fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
 
     return fig
 
@@ -122,6 +126,9 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
     if camera:
         fig.update_layout(scene_camera=camera, scene2_camera=camera)
 
-    fig.update_layout(title_text=f'3D projections in latent space')
+    fig.update_layout(title_text=f'Aligned Cells (3D)',
+                      font_size=plot_font_size,
+                      title_font_size=plot_title_font_size)
+    fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
 
     return fig

@@ -15,7 +15,7 @@ from operations.maninetcluster.util import Timer
 
 from app_main.settings import cell_limit
 from app_main.utilities import safe_filenames, cache_key
-from app_main.constants import UploadFileType, blank_layout
+from app_main.constants import UploadFileType, blank_layout, plot_title_font_size, plot_font_size
 
 import io
 import base64
@@ -309,7 +309,9 @@ def register_callbacks(app, cache):
         else:
             raise Exception('Unexpected number of vars!  Bug!')
 
-        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                      font_size=plot_font_size,
+                      title_font_size=plot_title_font_size)
 
         return fig, error_message, bool(error_message)
 

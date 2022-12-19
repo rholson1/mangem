@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
-from app_main.constants import color_types
+from app_main.constants import color_types, plot_font_size, plot_title_font_size
 from operations.preprocessing import preprocess
 
 
@@ -85,6 +85,9 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
     Rho_y = np.corrcoef(np.concatenate((Zy, Y), axis=1), rowvar=False)[2:, :2]
 
     titles = (label_1, label_2)
+
+    # Set font size for titles without affecting other annotations
+    titles = [f'<span style="font-size: {plot_title_font_size}px;">{t}</span>' for t in titles]
 
     fig = make_subplots(rows=2, cols=2,
                         row_heights=[0, 1],
@@ -204,9 +207,16 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                                   x1=Rho[i, 0], y1=Rho[i, 1],
                                   line={'color': 'black', 'width': 1})
 
+                    if Rho[i, 0] < -0.2:
+                        annotation_xanchor = 'left'
+                    elif Rho[i, 0] > 0.2:
+                        annotation_xanchor = 'right'
+                    else:
+                        annotation_xanchor = 'center'
                     fig.add_annotation(x=Rho[i, 0],
                                        y=Rho[i, 1],
                                        yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
+                                       xanchor=annotation_xanchor,
                                        text=labels[i],
                                        showarrow=False,
                                        row=r, col=c + 1)
@@ -241,7 +251,12 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
     fig.update_xaxes(matches='x')
     fig.update_yaxes(matches='y')
 
-    fig.update_layout(plot_bgcolor='white')
+    fig.update_layout(title_text='Top Feature Correlation with Latent Space',
+                      plot_bgcolor='white',
+                      font_size=plot_font_size,
+                      title_font_size=plot_title_font_size)
+    fig.update_annotations(font_size=plot_font_size)
+
     if show_legend:
         fig.update_layout(legend={'itemsizing': 'constant', 'title': color_types.get(color.name, color.name)})
 

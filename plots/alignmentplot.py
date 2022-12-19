@@ -7,7 +7,7 @@ import numpy as np
 import scipy.spatial.distance as sd
 from operations.alignment import calc_domainAveraged_FOSCTTM
 from app_main.utilities import df_to_data
-from app_main.constants import dataset_titles, marker_size_3d
+from app_main.constants import dataset_titles, marker_size_3d, plot_font_size, plot_title_font_size, big_fonts
 
 
 def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
@@ -66,7 +66,11 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z):
     pairwise_distances = [sd.euclidean(d_1[i, :], d_2[i, :]) for i in range(d_1.shape[0])]
     foscttm = calc_domainAveraged_FOSCTTM(d_1, d_2)
 
-    titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$', 'Alignment')
+
+    if big_fonts:
+        titles = (f'$\large{{\mu = {np.mean(pairwise_distances):.4f}}}$', f'$\large{{\mu = {np.mean(foscttm):.4f}}}$', 'Alignment')
+    else:
+        titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$', 'Alignment')
 
     fig = make_subplots(rows=1, cols=3,
                         column_widths=[0.15, 0.15, 0.7],
@@ -93,6 +97,9 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z):
                   row=1, col=3)
 
     fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
-                      legend={'itemsizing': 'constant'})
+                      legend={'itemsizing': 'constant'},
+                      font_size=plot_font_size,
+                      title_font_size=plot_title_font_size)
+    fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
 
     return fig
