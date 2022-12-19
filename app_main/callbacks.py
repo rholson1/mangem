@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 from plots import *
-from operations.alignment import alignment, UnexpectedAlignmentMethodException #nonlinear_manifold_alignment
+from operations.alignment import alignment, UnexpectedAlignmentMethodException, PCAError
 from operations.clustering import cluster_gmm, cluster_kmeans, cluster_hierarchical
 from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
@@ -615,6 +615,16 @@ def register_callbacks(app, cache):
                 proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
             except UnexpectedAlignmentMethodException:
                 raise PreventUpdate
+            except PCAError:
+                # Check for NaN in data.  Could be from log of a negative number.
+                for idx, preprocessed in enumerate((X1, X2), start=1):
+                    if np.any(np.isnan(preprocessed)):
+                        error_msg = f'NaN found in data for modality {idx} after preprocessing.'
+                        if preprocess_1 == 'log':
+                            error_msg += ' Are you trying to take the log of a negative number?'
+                if not error_msg:
+                    error_msg = 'Unknown error during PCA dimensionality reduction.'
+                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
 
             aligned_1, aligned_2 = proj
 

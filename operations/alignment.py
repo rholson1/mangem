@@ -22,6 +22,10 @@ class UnexpectedAlignmentMethodException(Exception):
     pass
 
 
+class PCAError(Exception):
+    pass
+
+
 def alignment(method, X, Y, num_dims, neighbors=2):
     """ Interface to alignment methods
     'lma': 'Linear Manifold Alignment',
@@ -36,10 +40,16 @@ def alignment(method, X, Y, num_dims, neighbors=2):
     if USE_PCA:
         pca = PCA(.90)  # choose number of principal components to retain 95% of the variance
         #pca = PCA(min(50, X.shape[1]))
-        X = pca.fit_transform(X)
+        try:
+            X = pca.fit_transform(X)
+        except ValueError:
+            raise PCAError()
         print(pca.n_components_, sum(pca.explained_variance_ratio_))
         #pca = PCA(min(50, Y.shape[1]))
-        Y = pca.fit_transform(Y)
+        try:
+            Y = pca.fit_transform(Y)
+        except ValueError:
+            raise PCAError()
         print(pca.n_components_, sum(pca.explained_variance_ratio_))
 
 
