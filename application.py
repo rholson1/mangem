@@ -5,7 +5,7 @@ from app_main import layout
 from app_main.callbacks import register_callbacks
 
 app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME])
-app.title = 'Multimodal Alignment'
+app.title = 'MANGEM'
 application = app.server
 
 CACHE_CONFIG = {
