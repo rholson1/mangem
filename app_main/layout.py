@@ -300,12 +300,11 @@ def get_layout():
                                                                            className='fa-regular fa-circle-question')
                                                                 ]),
                                                                 dbc.Tooltip(children=[
-                                                                    'Additional cell information can be supplied in a metadata .csv file. '
-                                                                    'Only "ttype" (transcriptomic type) is currently supported.',
+                                                                    'Additional cell phenotype information can be supplied in a metadata .csv file.',
                                                                     html.Table(className='table-csv', children=[
                                                                         html.Tr([
                                                                             html.Td(),
-                                                                            html.Td('ttype'),
+                                                                            html.Td('Phenotype 1'),
                                                                             html.Td('...'), ]
                                                                         ),
                                                                         html.Tr([
@@ -704,17 +703,19 @@ def get_layout():
                                     children=[
                                     html.Li([
                                         html.H4('Upload Data'),
-                                        html.P('On the Data tab, select a predefined data set (mouse motor or '
+                                        html.P(['On the Data tab, select a predefined data set (mouse motor or '
                                                'visual cortex neurons) or upload your own data files. '
                                                'User uploaded data must be in .csv files where the first row '
                                                'contains column names and the first column contains cell '
-                                               'identifiers.  A data set includes two files, one for each modality '
-                                               '(e.g., gene expression, cell morphology, or electrophysiological '
-                                               'features), along with an optional metadata file that identifies '
-                                               'cell transcriptomic type (with column header "ttype"). '
-                                               'Files must have consistent cell (row) order.'
+                                               'identifiers.',
+                                               'Files must have consistent cell (row) order.',
+                                               html.Ol(children=[
+                                                   html.Li('Modality 1 single-cell data file (e.g. gene expression, neuron morphology, or electrophysiological feature)'),
+                                                   html.Li('Modality 2 single-cell data file'),
+                                                   html.Li('Single-cell metadata/phenotype data, expected to be categorical')])
+                                               ]
                                                ),
-                                        html.P('Currently (during application development), only the first 1000 rows of uploaded data files are used.'),
+                                        html.P('The first 1000 rows of uploaded data files are used.'),
                                         html.P([
                                             'A sample dataset may be downloaded here: ',
                                             html.Button('Sample Data (Mouse motor cortex)', id='sample-data-download-button'),
@@ -722,12 +723,22 @@ def get_layout():
                                         html.H5('Preprocessing'),
                                         html.P('Optionally, select a preprocessing operation to be performed '
                                                'on each modality prior to alignment.  The currently supported '
-                                               'operations are log transformation and standardization.')]),
+                                               'operations are log transformation and standardization.'),
+
+                                        html.H5('Explore data'),
+                                        html.P('The selected dataset can be explored by entering one or two cell features in the "X, Y" box along with '
+                                               'a metadata type.  If desired, the set of cells can be filtered by selecting a metadata value. '
+                                               'The feature name can be typed or selected from a drop-down box and copied using the "+" button.'),
+                                        html.P('If a single feature is entered, the distribution of values will be shown as a set of box plots, grouped by metadata value. '
+                                               'If two features are entered, then they will be plotted against each other in a scatter plot, colored by metadata value.')
+                                    ]),
                                     html.Li([
                                         html.H4('Align Data'),
-                                        html.P('The alignment tab provides controls to select the dimension '
-                                               'of the latent space to which the cellular data should be projected '
-                                               'as well as the number of nearest neighbors to be used in constructing '
+                                        html.P('The alignment tab provides controls to select an alignment method and '
+                                               'the dimension '
+                                               'of the latent space to which the cellular data should be projected. '
+                                               'The Linear Manifold Alignment and Nonlinear Manifold Alignment methods will '
+                                               'also use the number of nearest neighbors to be used in constructing '
                                                'similarity matrices.'),
                                         html.P('Click the "Align Datasets" button to perform the alignment. '
                                                'If the alignment parameters are changed, the "Align Datasets" '
@@ -736,8 +747,9 @@ def get_layout():
                                                'downloaded by clicking on the "Download Aligned Data" button.')]),
                                     html.Li([
                                         html.H4('Clustering'),
-                                        html.P('The clustering tab includes a control to select the number of '
-                                               'cross-modal clusters which should be identified.  Click the '
+                                        html.P('The clustering tab includes controls to select a clustering algorithm '
+                                               'as well as the number of cross-modal cell clusters which should be '
+                                               'identified.  Click the '
                                                '"Download Clusters" button to download files that label '
                                                'cells with the identified cross-modal clusters.')
                                     ]),
@@ -756,42 +768,35 @@ def get_layout():
                                                           'Closer Than True Match (FOSCTTM).')
                                             ]),
                                             html.Li([
-                                                html.H5('Separate 2-D plots'),
+                                                html.H5('Aligned Cells (2D)'),
                                                 html.Span('Display a 2-D projection of the aligned datasets '
                                                           'in two side-by-side plots.')
                                             ]),
                                             html.Li([
-                                                html.H5('Separate 3-D plots'),
+                                                html.H5('Aligned Cells (3D)'),
                                                 html.Span('Display a 3-D projection of the aligned datasets '
                                                           'in two side-by-side plots.')
                                             ]),
                                             html.Li([
-                                                html.H5('Bibiplot'),
+                                                html.H5('Top Feature Correlation with Latent Space (Bibiplot)'),
                                                 html.Span('Display biplots in two dimensions of the latent space. '
-                                                          'Aligned datasets are projected together with lines '
+                                                          'Aligned datasets are projected along with lines '
                                                           'describing the correlation of features with the '
                                                           'latent space.')
                                             ]),
                                             html.Li([
-                                                html.H5('Feature enrichment by cluster'),
+                                                html.H5('Cross-modal Cluster Feature Expression (Heatmap)'),
                                                 html.Span('Computes and plots the top differentially-expressed '
                                                           'features by cross-modal cluster.')
                                             ]),
 
                                         ]),
                                         html.P('Controls are provided to control cell coloring (by cross-modal '
-                                               'cluster or transcriptomic type, if available) and to select the '
+                                               'cluster or cell metadata) and to select the '
                                                'latent space components which should be used in creating the '
-                                               'above visualizations.')
-
+                                               'above visualizations.  The number of top features to be identified for '
+                                               'each cross-modal cluster may also be specified.')
                                     ]),
-                                    html.H4('Top Feature Enrichment By Cluster '),
-                                    html.P('The feature enrichment by cluster plot computes the most enriched '
-                                           'features for each cross-modal cluster.  The number of features to '
-                                           'be identified can be specified, and after the plot has been '
-                                           'generated, the list of most-enriched features for each cluster can '
-                                           'be downloaded by clicking the "Download Most Enriched Features" '
-                                           'button.')
                                 ])
                             ]
                         )
