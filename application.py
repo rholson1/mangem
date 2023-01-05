@@ -5,7 +5,9 @@ from app_main import layout
 from app_main.callbacks import register_callbacks
 
 app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME],
-           url_base_pathname='/mangem_aws/')
+           routes_pathname_prefix='/mangem_aws/',
+           requests_pathname_prefix='/mangem_aws/')
+#           url_base_pathname='/mangem_aws/')
 app.title = 'MANGEM'
 application = app.server
 
