@@ -24,7 +24,7 @@ import zipfile
 import time
 
 
-def register_callbacks(app, cache):
+def register_callbacks(app, cache, background_callback_manager):
     @app.callback(
         Output('upload-container', 'className'),
         Output('store-data_selected', 'data'),
@@ -827,38 +827,13 @@ def register_callbacks(app, cache):
         return f'{url_path.rstrip("/")}/assets/cover_figure.png'
 
 
-    # @app.callback(
-    #     Output(component_id='loading-output-2', component_property='children'),
-    #     Input(component_id='btn-cluster', component_property='n_clicks'),
-    #     prevent_initial_call=True
-    # )
-    # def identify_clusters(value):
-    #     # identify clusters
-    #     time.sleep(2)
-    #
-    #     # GMM
-    #
-    #
-    #     return 'Clusters identified'
-
-
-    # @app.callback(
-    #     Output('store-aligned', 'data'),
-    #     Output('alignment-state', 'children'),
-    #     Input('btn-align', 'n_clicks'),
-    #     Input('data-selector', 'value'),
-    # )
-    # def set_alignment_state(button, dataset):
-    #     """ If the data are aligned (via clicking on the alignment button) then set alignment state to true.
-    #     If anything else changes that could invalidate the alignment, set alignment state to false.
-    #
-    #     This will likely need to change if/when alignment is automatically triggered.
-    #     """
-    #     if ctx.triggered_id == 'btn-align':
-    #         return 'true', 'Status: Aligned'
-    #     else:
-    #         return 'false', 'Status: Not Aligned'
-
-
-
-
+    # background callback example
+    @app.callback(
+        output=Output("bg_paragraph_id", "children"),
+        inputs=Input("bg_button_id", "n_clicks"),
+        background=True,
+        manager=background_callback_manager,
+    )
+    def update_clicks(n_clicks):
+        time.sleep(2.0)
+        return [f"Clicked {n_clicks} times"]

@@ -690,6 +690,14 @@ def get_layout():
                         html.Div(
                             id='about-page',
                             children=[
+
+                                # Background callback simple example
+                                html.Div([
+                                    html.Div([html.P(id="bg_paragraph_id", children=["Button not clicked"])]),
+                                    html.Button(id="bg_button_id", children="Run Job!"),
+                                ]),
+
+
                                 html.Img(src='',
                                          alt='Manifold alignment and clustering flow chart',
                                          className='tab-image', id='flowchart-img'),

@@ -1,12 +1,19 @@
-from dash import Dash
+from dash import Dash, CeleryManager
 from flask_caching import Cache
 import dash_bootstrap_components as dbc
 from app_main import layout
 from app_main.callbacks import register_callbacks
+from celery import Celery
 
-app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME])
+REDIS_URL = "redis://localhost:6379"
+celery_app = Celery(__name__, broker=REDIS_URL, backend=REDIS_URL)
+background_callback_manager = CeleryManager(celery_app)
+
+
+app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME], background_callback_manager=background_callback_manager)
 app.title = 'MANGEM'
 application = app.server
+
 
 CACHE_CONFIG = {
     'CACHE_TYPE': 'FileSystemCache',
@@ -18,7 +25,7 @@ cache = Cache()
 cache.init_app(application, config=CACHE_CONFIG)
 
 app.layout = layout.get_layout()
-register_callbacks(app, cache)
+register_callbacks(app, cache, background_callback_manager)
 
 
 if __name__ == '__main__':
