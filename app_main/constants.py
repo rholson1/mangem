@@ -30,3 +30,8 @@ class UploadFileType(int, Enum):
     DATA_1 = 1
     DATA_2 = 2
     METADATA = 3
+
+class StoredFileType(int, Enum):
+    ALIGNED_1 = 1
+    ALIGNED_2 = 2
+    STATUS = 3

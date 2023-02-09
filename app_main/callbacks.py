@@ -1,4 +1,5 @@
-from dash import Output, Input, State, MATCH, ALL, ctx, dcc
+import dash
+from dash import Output, Input, State, MATCH, ALL, ctx, dcc, html
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 import plotly.express as px
@@ -15,13 +16,16 @@ from operations.maninetcluster.util import Timer
 
 from app_main.settings import cell_limit
 from app_main.utilities import safe_filenames, cache_key
-from app_main.constants import UploadFileType, blank_layout, plot_title_font_size, plot_font_size
+from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_title_font_size, plot_font_size
 
 import io
 import base64
 import zipfile
+import urllib.parse
+import uuid
 
 import time
+import datetime
 
 
 def register_callbacks(app, cache, background_callback_manager):
@@ -488,6 +492,7 @@ def register_callbacks(app, cache, background_callback_manager):
         Output('user-data-alert', 'is_open'),
         Output('user-data-alert', 'color'),
         Output('metadata-type', 'options'),
+        Output('store-align-bg-trigger', 'data'),
         Input('session_id', 'data'),
         Input('btn-align', 'n_clicks'),
         Input('btn-cluster', 'n_clicks'),
@@ -499,26 +504,41 @@ def register_callbacks(app, cache, background_callback_manager):
         State('neighbors', 'value'),
         State('num_clusters', 'value'),
         State('clustering-method', 'value'),
-        # State(component_id='eig-method', component_property='value'),
-        # State(component_id='eig-count', component_property='value'),
         State({'type': 'dynamic-output', 'index': ALL}, 'children'),
         State('metadata-type', 'options'),
+        State('url', 'href'),
         prevent_initial_call=True
     )
-    def align_and_cluster_datasets(session_id, align_clicks, cluster_clicks, dataset,
+    def align_and_cluster(session_id, align_clicks, cluster_clicks, dataset,
                                    preprocess_1, preprocess_2,
                                    alignment_method, ndims, neighbors,
                                    num_clusters, clustering_method,
                                    upload_filenames,
-                                   metadata_options):
+                                   metadata_options,
+                                   url_href):
 
         error_msg = ''
+
+        # If aligning and alignment method is UnionCom or MMD-MA, run in background
+        if ctx.triggered_id == 'btn-align' and alignment_method in ('unioncom', 'mmdma'):
+            job_id = str(uuid.uuid4())
+
+            url_parts = urllib.parse.urlsplit(url_href)
+            url_parts = url_parts._replace(query=f'job={job_id}')
+            url = urllib.parse.urlunsplit(url_parts)
+            error_msg = ['Alignment processing running in background.  To check job status, click on ',
+                         html.A(url, href=url)
+                         #dcc.Link(url, href=url)
+                         ]
+
+            return '', '0', error_msg, bool(error_msg), 'info', metadata_options, job_id
+
 
         # If user-uploaded data, make sure that two data files have been uploaded (before trying to read from cache!)
         if dataset not in ('motor', 'visual'):
             if not (upload_filenames[0] and upload_filenames[1]):
                 error_msg = 'Two data files must be uploaded before data can be aligned.'
-                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
+                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options, dash.no_update
 
         # add logic for selectively processing only what has to be processed
         # (e.g., if clustering button is clicked, don't re-run alignment (which is expensive!)
@@ -529,7 +549,7 @@ def register_callbacks(app, cache, background_callback_manager):
                 df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
             except ValueError:
                 error_msg = 'Data must be aligned before clusters can be identified.'
-                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
+                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options, dash.no_update
             ttype = df_1['ttype']
             aligned_1 = np.array(df_1.drop(columns=['ttype', 'cluster']))
             aligned_2 = np.array(df_2.drop(columns=['ttype', 'cluster']))
@@ -581,11 +601,11 @@ def register_callbacks(app, cache, background_callback_manager):
                     df_2 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_2.name)))
                 except ValueError:
                     error_msg = 'Two data files must be uploaded before data can be aligned.'
-                    return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
+                    return '', '0', error_msg, bool(error_msg), 'danger', metadata_options, dash.no_update
 
                 if len(df_1) != len(df_2):
                     error_msg = 'Both data files must have the same number of rows.'
-                    return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
+                    return '', '0', error_msg, bool(error_msg), 'danger', metadata_options, dash.no_update
 
                 # The first column is supposed to include cell identifiers, so drop it.
                 X1 = np.array(df_1.iloc[:, 1:], dtype=float)
@@ -624,7 +644,7 @@ def register_callbacks(app, cache, background_callback_manager):
                             error_msg += ' Are you trying to take the log of a negative number?'
                 if not error_msg:
                     error_msg = 'Unknown error during PCA dimensionality reduction.'
-                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options
+                return '', '0', error_msg, bool(error_msg), 'danger', metadata_options, dash.no_update
 
             aligned_1, aligned_2 = proj
 
@@ -651,7 +671,46 @@ def register_callbacks(app, cache, background_callback_manager):
         cache.set(f'{session_id}-aligned_1', aligned_1.to_json())
         cache.set(f'{session_id}-aligned_2', aligned_2.to_json())
 
-        return '', str(time.time()), error_msg, bool(error_msg), 'warning', metadata_options
+        return '', str(time.time()), error_msg, bool(error_msg), 'warning', metadata_options, dash.no_update
+
+    @app.callback(
+        Output(component_id='loading-alignment-bg', component_property='children'),
+        # Output('store-aligned', 'data'),
+        # Output('user-data-alert', 'children'),
+        # Output('user-data-alert', 'is_open'),
+        # Output('user-data-alert', 'color'),
+        # Output('metadata-type', 'options'),
+        Input('store-align-bg-trigger', 'data'),
+
+        State('session_id', 'data'),  # was Input
+        State('btn-align', 'n_clicks'),
+        State('btn-cluster', 'n_clicks'),
+
+        State('data-selector', 'value'),
+        State('preprocess_1', 'value'),
+        State('preprocess_2', 'value'),
+        State('alignment-method', 'value'),
+        State('ndims', 'value'),
+        State('neighbors', 'value'),
+        State('num_clusters', 'value'),
+        State('clustering-method', 'value'),
+        State({'type': 'dynamic-output', 'index': ALL}, 'children'),
+        State('metadata-type', 'options'),
+        prevent_initial_call=True,
+        background=True,
+        manager=background_callback_manager
+    )
+    def align_and_cluster_background(job_id, session_id, align_clicks, cluster_clicks, dataset,
+                                   preprocess_1, preprocess_2,
+                                   alignment_method, ndims, neighbors,
+                                   num_clusters, clustering_method,
+                                   upload_filenames,
+                                   metadata_options):
+
+        status = f'Job {job_id} has started at {datetime.datetime.now()}.'
+        cache.set(cache_key(job_id, StoredFileType.STATUS.name), status)
+
+        return ''
 
 
     @app.callback(
@@ -827,12 +886,74 @@ def register_callbacks(app, cache, background_callback_manager):
         return f'{url_path.rstrip("/")}/assets/cover_figure.png'
 
 
+    @app.callback(
+        Output('user-data-alert-bg', 'is_open'),
+        Output('user-data-alert-bg', 'children'),
+        Output('data-selector', 'options'),
+        Output('data-selector', 'value'),
+        Input('url', 'href'),
+        State('session_id', 'data'),
+        State('data-selector', 'options')
+    )
+    def report_bg_status(url_href, session_id, data_options):
+        """Report the status of a background job based on the job query parameter"""
+
+        url_parts = urllib.parse.urlsplit(url_href)
+        qs_dict = urllib.parse.parse_qs(url_parts.query)
+        job_id = qs_dict.get('job', None)
+        message = ''
+        if job_id:
+            job_id = job_id[0]
+            data_exist = cache.has(cache_key(job_id, UploadFileType.DATA_1.name)) and \
+                         cache.has(cache_key(job_id, UploadFileType.DATA_2.name))
+
+            aligned_exist = cache.has(cache_key(job_id, StoredFileType.ALIGNED_1.name)) and \
+                            cache.has(cache_key(job_id, StoredFileType.ALIGNED_2.name))
+
+            status_exist = cache.has(cache_key(job_id, StoredFileType.STATUS.name))
+
+            aligned_exist = True  #testing
+            if aligned_exist:
+                message = f'Job {job_id} is complete.  Aligned data are ready for analysis.'
+
+                new_options = data_options + [{'label': f'Job {job_id}', 'value': 'background'}]
+                return bool(message), message, new_options, 'background'
+
+            elif status_exist:
+                message = cache.get(cache_key(job_id, StoredFileType.STATUS.name))
+            else:
+                message = f'Background job {job_id} not found.  Jobs expire and results are deleted after 2 days.'
+
+        return bool(message), message, dash.no_update, dash.no_update
+
+        # try:
+        #     pass
+        #     # aligned data
+        #     df_1 = pd.read_json(cache.get(f'{session_id}-aligned_1'))
+        #     df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        #
+        #     # uploaded data files
+        #     df_1 = pd.read_json(cache.get(cache_key(job_id, UploadFileType.DATA_1.name)))
+        #     df_2 = pd.read_json(cache.get(cache_key(job_id, UploadFileType.DATA_2.name)))
+        #
+        #     df_1 = pd.read_json(cache.get(f'{session_id}-status'))
+        #     df_2 = pd.read_json(cache.get(f'{session_id}-aligned_2'))
+        #
+        #     # copy
+        #     # Store aligned and annotated data in cache
+        #     cache.set(f'{session_id}-aligned_1', aligned_1.to_json())
+        #     cache.set(f'{session_id}-aligned_2', aligned_2.to_json())
+        # except ValueError:
+        #     message = 'No response files found for this job.'
+
+
     # background callback example
     @app.callback(
         output=Output("bg_paragraph_id", "children"),
         inputs=Input("bg_button_id", "n_clicks"),
         background=True,
         manager=background_callback_manager,
+        prevent_initial_call=True
     )
     def update_clicks(n_clicks):
         time.sleep(2.0)
