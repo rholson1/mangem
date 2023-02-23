@@ -26,7 +26,7 @@ def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
                                marker={'color': 'blue', 'size': marker_size_3d},
                                name=label_2,
                                showlegend=True))
-    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
+    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles.get(dataset, "Background job")}',
                       legend={'itemsizing': 'constant'})
 
     return fig
@@ -52,7 +52,7 @@ def plot_alignment_error(df_1, df_2, dataset):
     # box plot of FOSCTTM scores (Fraction of Samples Closer Than True Match)
     fig.add_trace(go.Box(y=foscttm, name='FOSCTTM', showlegend=False), row=1, col=2)
 
-    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
+    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles.get(dataset, "Background job")}',
                       legend={'itemsizing': 'constant'})
 
     return fig
@@ -96,7 +96,7 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z):
                                showlegend=True),
                   row=1, col=3)
 
-    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles[dataset]}',
+    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles.get(dataset, "Background job")}',
                       legend={'itemsizing': 'constant'},
                       font_size=plot_font_size,
                       title_font_size=plot_title_font_size)

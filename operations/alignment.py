@@ -26,7 +26,7 @@ class PCAError(Exception):
     pass
 
 
-def alignment(method, X, Y, num_dims, neighbors=2):
+def alignment(method, X, Y, num_dims, neighbors=2, mmdma_iterations=1000):
     """ Interface to alignment methods
     'lma': 'Linear Manifold Alignment',
     'nlma': 'Nonlinear Manifold Alignment (NLMA)',
@@ -64,24 +64,18 @@ def alignment(method, X, Y, num_dims, neighbors=2):
         elif method == 'nlma':
             proj = manifold_nonlinear(X, Y, num_dims, Wx, Wy, eig_method=eig_method, eig_count=eig_count)
     elif method == 'unioncom':
-        pass
-        uc = UnionCom.UnionCom(output_dim=num_dims, epoch_pd=20, epoch_DNN=10)
+        uc = UnionCom.UnionCom(output_dim=num_dims, epoch_pd=2000, epoch_DNN=100)  #epoch_pd=20, epoch_DNN=10)
         proj = uc.fit_transform(dataset=[X, Y])
     elif method == 'cca':
         corr = Correspondence(matrix=np.eye(len(X)))
         proj = CCA(X, Y, corr, num_dims).project(X, Y, num_dims)
     elif method == 'mmdma':
-        pass
-
-
-
-
         # Perform MMD-MA alignment
         X = X / np.linalg.norm(X, axis=1).reshape(-1, 1)
         Y = Y / np.linalg.norm(Y, axis=1).reshape(-1, 1)
         X = np.matmul(X, X.T)
         Y = np.matmul(Y, Y.T)
-        proj, history, ab = mmd_ma_helper(X, Y, p=num_dims, max_iterations=100, training_rate=.0001)  # p=32, training_rate=.00005
+        proj, history, ab = mmd_ma_helper(X, Y, p=num_dims, max_iterations=mmdma_iterations, training_rate=0.00005)  # max_iterations=100, training_rate=.0001)  # p=32, training_rate=.00005
     else:
         raise UnexpectedAlignmentMethodException()
     return proj

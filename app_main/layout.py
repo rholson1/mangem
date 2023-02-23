@@ -19,6 +19,7 @@ def get_layout():
         dcc.Store(id='store-align-bg-trigger', data='0'),
         dcc.Store(id='store-label-1', data='Modality 1'),
         dcc.Store(id='store-label-2', data='Modality 2'),
+        dcc.Store(id='store-bg-vars', data=''),
         dcc.Store(id={'type': 'store-upload', 'index': UploadFileType.DATA_1}, data='0'),
         dcc.Store(id={'type': 'store-upload', 'index': UploadFileType.DATA_2}, data='0'),
         dcc.Store(id={'type': 'store-upload', 'index': UploadFileType.METADATA}, data='0'),
@@ -453,7 +454,7 @@ def get_layout():
                                                 html.Button('Next Step', className='operations-button',
                                                             id={'type': 'next-button', 'index': 1}),
                                                 html.A(html.Button('Reset Application', className='operations-button'),
-                                                       href=''),
+                                                       href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
 
                                         ])
@@ -491,6 +492,13 @@ def get_layout():
                                                     #           type='number', min=1, max=10, step=1),
                                                     dcc.Slider(id='neighbors', value=2, min=1, max=10, step=1)
                                                 ]),
+                                                html.Label([
+                                                    'Iterations (MMD-MA): ',
+                                                    # dcc.Input(id='neighbors', value='2', style={'width': '20px'},
+                                                    #           type='number', min=1, max=10, step=1),
+                                                    dcc.Dropdown(id='mmdma_iterations', value=1000,
+                                                                 options=[200, 500, 1000, 2000, 5000, 10000])
+                                                ]),
                                                 html.Button('Align Datasets', id='btn-align',
                                                             className='operations-button'),
                                                 html.Button('Download Aligned Data', id='btn-align-download',
@@ -501,7 +509,7 @@ def get_layout():
                                                 html.Button('Next Step', className='operations-button',
                                                             id={'type': 'next-button', 'index': 2}),
                                                 html.A(html.Button('Reset Application', className='operations-button'),
-                                                       href=''),
+                                                       href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
                                         ]),
 
@@ -550,7 +558,7 @@ def get_layout():
                                                 html.Button('Next Step', className='operations-button',
                                                             id={'type': 'next-button', 'index': 3}),
                                                 html.A(html.Button('Reset Application', className='operations-button'),
-                                                       href=''),
+                                                       href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
                                         ])
 
@@ -634,7 +642,7 @@ def get_layout():
                                             ]),
                                             html.Div([
                                                 html.A(html.Button('Reset Application', className='operations-button'),
-                                                       href=''),
+                                                       href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
                                         ])
 
@@ -704,11 +712,11 @@ def get_layout():
                             id='about-page',
                             children=[
 
-                                # Background callback simple example
-                                html.Div([
-                                    html.Div([html.P(id="bg_paragraph_id", children=["Button not clicked"])]),
-                                    html.Button(id="bg_button_id", children="Run Job!"),
-                                ]),
+                                # # Background callback simple example
+                                # html.Div([
+                                #     html.Div([html.P(id="bg_paragraph_id", children=["Button not clicked"])]),
+                                #     html.Button(id="bg_button_id", children="Run Job!"),
+                                # ]),
 
 
                                 html.Img(src='',
