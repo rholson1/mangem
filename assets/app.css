@@ -126,7 +126,8 @@ label, legend {
 
 .custom-tab-selected {
   border-bottom: none;
-  border-top: 2px solid var(--color-accent) !important;
+  border-top: 4px solid var(--color-accent) !important;
+  font-weight: bold;
 }
 
 .rc-slider-rail {
