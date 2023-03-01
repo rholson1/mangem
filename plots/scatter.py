@@ -1,11 +1,11 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from app_main.constants import color_types, marker_size_3d, plot_font_size, plot_title_font_size
+from app_main.constants import color_types, marker_size_3d, font_size
 
 
 
-def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):
+def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2, size_key='default'):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
@@ -55,6 +55,9 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):
     fig.update_xaxes(matches='x')
     fig.update_yaxes(matches='y')
 
+    plot_font_size = font_size[size_key]['plot_font_size']
+    plot_title_font_size = font_size[size_key]['plot_title_font_size']
+
     fig.update_layout(title_text=f'Aligned Cells (2D)',
                       font_size=plot_font_size,
                       title_font_size=plot_title_font_size)
@@ -63,7 +66,7 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2):
     return fig
 
 
-def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_1, label_2):
+def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_1, label_2, size_key='default'):
     """
     Plot two 2D plots side by side
     :param df1: Pandas dataframe 1
@@ -125,6 +128,9 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
         camera = relayoutData['scene2.camera']
     if camera:
         fig.update_layout(scene_camera=camera, scene2_camera=camera)
+
+    plot_font_size = font_size[size_key]['plot_font_size']
+    plot_title_font_size = font_size[size_key]['plot_title_font_size']
 
     fig.update_layout(title_text=f'Aligned Cells (3D)',
                       font_size=plot_font_size,

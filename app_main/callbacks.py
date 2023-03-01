@@ -16,7 +16,7 @@ from operations.maninetcluster.util import Timer
 
 from app_main.settings import cell_limit
 from app_main.utilities import safe_filenames, cache_key
-from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_title_font_size, plot_font_size, plot_size_style
+from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_size, font_size
 
 import io
 import base64
@@ -266,10 +266,11 @@ def register_callbacks(app, cache, background_callback_manager):
         State('preprocess_2', 'value'),
         State({'type': 'dynamic-output', 'index': ALL}, 'children'),
         State('session_id', 'data'),
+        State('hires-plots', 'value'),
         prevent_initial_call=True
     )
     def handle_explore_vars(explore_vars, metadata_type, metadata_value, apply_preprocess, log_axis,
-                            dataset, preprocess_1, preprocess_2, upload_filenames, session_id):
+                            dataset, preprocess_1, preprocess_2, upload_filenames, session_id, hires):
         """
 
         :param explore_vars:
@@ -283,8 +284,6 @@ def register_callbacks(app, cache, background_callback_manager):
         :param session_id:
         :return:
         """
-
-
 
         error_message = ''
         fig = go.Figure(data={}, layout=blank_layout)
@@ -350,9 +349,10 @@ def register_callbacks(app, cache, background_callback_manager):
         else:
             raise Exception('Unexpected number of vars!  Bug!')
 
+        size_key = 'big' if hires == ['hires'] else 'default'
         fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                      font_size=plot_font_size,
-                      title_font_size=plot_title_font_size)
+                      font_size=font_size[size_key]['plot_font_size'],
+                      title_font_size=font_size[size_key]['plot_title_font_size'])
 
         return fig, error_message, bool(error_message)
 
@@ -370,6 +370,7 @@ def register_callbacks(app, cache, background_callback_manager):
         Input('component_z', 'value'),
         Input('store-aligned', 'data'),
         Input('graph-combined', 'relayoutData'),
+        Input('hires-plots', 'value'),
         State('data-selector', 'value'),
         State('session_id', 'data'),
         State('store-label-1', 'data'),
@@ -380,7 +381,7 @@ def register_callbacks(app, cache, background_callback_manager):
         State('num_enriched', 'value'),
         prevent_initial_call=True
     )
-    def update_plot(plot_type, color_type, metadata_type, x, y, z, last_aligned, relayoutData,
+    def update_plot(plot_type, color_type, metadata_type, x, y, z, last_aligned, relayoutData, hires,
                     dataset, session_id, label_1, label_2,
                     preprocess_1, preprocess_2, num_clusters, num_enriched):
 
@@ -418,7 +419,8 @@ def register_callbacks(app, cache, background_callback_manager):
             df_1[metadata_type] = list(metadata_df[metadata_type])
             df_2[metadata_type] = list(metadata_df[metadata_type])
 
-
+        size_key = 'big' if hires == ['hires'] else 'default'
+        plot_size_style = plot_size[size_key]
         style = {}  # default
         legend = ''
         if plot_type == 'alignment':
@@ -438,7 +440,7 @@ def register_callbacks(app, cache, background_callback_manager):
              closer than the true match.
              """
         elif plot_type == 'alignment-combo':
-            fig = plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z)
+            fig = plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, size_key)
 
             style = plot_size_style
             legend = f"""Alignment error between the projections of {label_1} and {label_2} into the
@@ -450,13 +452,13 @@ def register_callbacks(app, cache, background_callback_manager):
              """
 
         elif plot_type == 'separate2':
-            fig = scatter2d(df_1, df_2, x, y, color_type, metadata_type, label_1, label_2)
+            fig = scatter2d(df_1, df_2, x, y, color_type, metadata_type, label_1, label_2, size_key)
             style = plot_size_style
             legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1} and {y+1}
             of the latent space."""
 
         elif plot_type == 'separate3':
-            fig = scatter3d(df_1, df_2, x, y, z, color_type, metadata_type, relayoutData, label_1, label_2)
+            fig = scatter3d(df_1, df_2, x, y, z, color_type, metadata_type, relayoutData, label_1, label_2, size_key)
             style = plot_size_style
             legend = f"""{label_1} and {label_2} are separately projected to dimensions {x+1}, {y+1}, and {z+1}
             of the latent space."""
@@ -485,7 +487,7 @@ def register_callbacks(app, cache, background_callback_manager):
                 color_vec = df_1.get(color_col, None)
                 fig = create_bibiplot1x2(data_1, data_2, Xg, Xe, x, y, dataset, color_vec, metadata_type,
                                          preprocess_1, preprocess_2,
-                                         label_1, label_2)
+                                         label_1, label_2, size_key)
                 style = plot_size_style
                 legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
                 Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
@@ -494,7 +496,7 @@ def register_callbacks(app, cache, background_callback_manager):
             elif plot_type == 'heatmap2':
                 clusters = df_1['cluster']  # The clusters column is the same in df_1 and df_2
                 fig, top_enriched = create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preprocess_2,
-                                                    clusters, num_clusters, label_1, label_2, num_enriched)
+                                                    clusters, num_clusters, label_1, label_2, num_enriched, size_key)
                 legend = f"""Feature expression levels across all cells for the top {num_enriched} differentially-expressed features
                 for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized feature
                 expression ranked using the Wilcox Rank Sum test."""
@@ -1042,17 +1044,21 @@ def register_callbacks(app, cache, background_callback_manager):
     @app.callback(
         Output('left-panel-tabs', 'value'),
         Input({'type': 'next-button', 'index': ALL}, 'n_clicks'),
+        Input('data-selector', 'value'),
         State('left-panel-tabs', 'value')
     )
-    def handle_next_button(n_clicks, selected_tab):
-        if selected_tab == 'tab-2':
-            return 'tab-3'
-        elif selected_tab == 'tab-3':
-            return 'tab-4'
-        elif selected_tab == 'tab-4':
-            return 'tab-5'
+    def handle_next_button(n_clicks, data_type, selected_tab):
+        if ctx.triggered_id == 'data-selector':
+            if data_type == 'background' and selected_tab == 'tab-1':
+                return 'tab-4'
         else:
-            raise PreventUpdate
+            if selected_tab == 'tab-2':
+                return 'tab-3'
+            elif selected_tab == 'tab-3':
+                return 'tab-4'
+            elif selected_tab == 'tab-4':
+                return 'tab-5'
+        raise PreventUpdate
 
     @app.callback(
         Output('flowchart-img', 'src'),

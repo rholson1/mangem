@@ -7,7 +7,7 @@ import numpy as np
 import scipy.spatial.distance as sd
 from operations.alignment import calc_domainAveraged_FOSCTTM
 from app_main.utilities import df_to_data
-from app_main.constants import dataset_titles, marker_size_3d, plot_font_size, plot_title_font_size, big_fonts
+from app_main.constants import dataset_titles, marker_size_3d, font_size
 
 
 def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
@@ -58,7 +58,7 @@ def plot_alignment_error(df_1, df_2, dataset):
     return fig
 
 
-def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z):
+def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, size_key='default'):
 
     d_1 = df_to_data(df_1)
     d_2 = df_to_data(df_2)
@@ -66,8 +66,10 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z):
     pairwise_distances = [sd.euclidean(d_1[i, :], d_2[i, :]) for i in range(d_1.shape[0])]
     foscttm = calc_domainAveraged_FOSCTTM(d_1, d_2)
 
+    plot_font_size = font_size[size_key]['plot_font_size']
+    plot_title_font_size = font_size[size_key]['plot_title_font_size']
 
-    if big_fonts:
+    if size_key == 'big':
         titles = (f'$\large{{\mu = {np.mean(pairwise_distances):.4f}}}$', f'$\large{{\mu = {np.mean(foscttm):.4f}}}$', 'Alignment')
     else:
         titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$', 'Alignment')

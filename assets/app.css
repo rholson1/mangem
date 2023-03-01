@@ -219,6 +219,11 @@ label, legend {
   text-align: center;
 }
 
+#user-data-alert-bg {
+  font-size: 12pt;
+  font-weight: bold;
+}
+
 .tab-parent, .tab-content {
   height: 100%;
 }

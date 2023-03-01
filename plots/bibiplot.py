@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
-from app_main.constants import color_types, plot_font_size, plot_title_font_size
+from app_main.constants import color_types, font_size
 from operations.preprocessing import preprocess
 
 
@@ -24,7 +24,7 @@ def normalize_raw_df(data):
 
 
 def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, metadata_type,
-                       preprocess_1, preprocess_2, label_1, label_2):
+                       preprocess_1, preprocess_2, label_1, label_2, size_key='default'):
     """
     Create 1x2 bibiplot
     :param data_1: raw dataset 1 (dataframe)
@@ -42,6 +42,9 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
     :param label_2: label for dataset 2
     :return:
     """
+
+    plot_title_font_size = font_size[size_key]['plot_title_font_size']
+    plot_font_size = font_size[size_key]['plot_font_size']
 
     # special handling for mouse datasets
     if dataset in ('motor', 'visual'):

@@ -7,13 +7,15 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import scale
 from operations.preprocessing import preprocess
-from app_main.constants import plot_font_size, plot_title_font_size
+from app_main.constants import font_size
 
 
 def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preprocess_2, cell_cluster, num_clusters,
-                    label_1, label_2, num_enriched):
+                    label_1, label_2, num_enriched, size_key='default'):
     """ Create heatmap showing differentially-expressed genes by cluster
     """
+
+    plot_title_font_size = font_size[size_key]['plot_title_font_size']
 
     top_enriched = {}
 
@@ -56,6 +58,9 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
         fig.add_trace(go.Heatmap(z=display_data,
                                  x=x, #display_data.columns.values,
                                  y=display_data.index,
+                                 colorscale='gnbu',
+                                 zmax=2,
+                                 zmin=-1,
                                  showscale=False,
                                  hovertemplate='Cell: %{x}<br>Feature: %{y}<extra></extra>'
                                  ),

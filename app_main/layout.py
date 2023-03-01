@@ -635,6 +635,8 @@ def get_layout():
                                                           step=1,
                                                           value=10,
                                                           className='component_input'),
+                                                dcc.Checklist(id='hires-plots',
+                                                              options=[{'label': 'High-resolution plots', 'value': 'hires'}]),
                                                 html.Button('Download Most Expressed Features',
                                                             id='btn-enriched-download',
                                                             className='operations-button'),
