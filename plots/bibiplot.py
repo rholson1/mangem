@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
-from app_main.constants import color_types, font_size
+from app_main.constants import color_types, font_size, marker_size
 from operations.preprocessing import preprocess
 
 
@@ -24,7 +24,7 @@ def normalize_raw_df(data):
 
 
 def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, metadata_type,
-                       preprocess_1, preprocess_2, label_1, label_2, size_key='default'):
+                       preprocess_1, preprocess_2, label_1, label_2, num_features, size_key='default'):
     """
     Create 1x2 bibiplot
     :param data_1: raw dataset 1 (dataframe)
@@ -40,11 +40,14 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
     :param preprocess_2: user-selected preprocessing method for dataset 2
     :param label_1: label for dataset 1
     :param label_2: label for dataset 2
+    :param num_features: number of top correlated features to display
+    :param size_key: key to use in selecting font sizes from font size dictionaries
     :return:
     """
 
     plot_title_font_size = font_size[size_key]['plot_title_font_size']
     plot_font_size = font_size[size_key]['plot_font_size']
+    marker_size_2d = marker_size[size_key]['2d']
 
     # special handling for mouse datasets
     if dataset in ('motor', 'visual'):
@@ -146,7 +149,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                 subset = list(color == category)
                 c = 1
                 fig.add_trace(go.Scatter(x=d1[subset, 0], y=d1[subset, 1], mode='markers',
-                                         marker={'size': 2, 'color': color_dict[category]},
+                                         marker={'size': marker_size_2d, 'color': color_dict[category]},
                                          xaxis=f'x{plot_id(r, c)}',
                                          yaxis=f'y{plot_id(r, c)}',
                                          showlegend=False,
@@ -156,7 +159,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                               row=r, col=c)
                 c = 2
                 fig.add_trace(go.Scatter(x=d2[subset, 0], y=d2[subset, 1], mode='markers',
-                                         marker={'size': 2, 'color': color_dict[category]},
+                                         marker={'size': marker_size_2d, 'color': color_dict[category]},
                                          xaxis=f'x{plot_id(r, c)}',
                                          yaxis=f'y{plot_id(r, c)}',
                                          showlegend=True,
@@ -168,7 +171,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
             # Create a single plot, using a color vector instead of a single color
             c = 1
             fig.add_trace(go.Scatter(x=d1[:, 0], y=d1[:, 1], mode='markers',
-                                     marker={'size': 2, 'color': colors, 'colorscale': 'Jet'},
+                                     marker={'size': marker_size_2d, 'color': colors, 'colorscale': 'Jet'},
                                      xaxis=f'x{plot_id(r, c)}',
                                      yaxis=f'y{plot_id(r, c)}',
                                      showlegend=False,
@@ -177,7 +180,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                           row=r, col=c)
             c = 2
             fig.add_trace(go.Scatter(x=d2[:, 0], y=d2[:, 1], mode='markers',
-                                     marker={'size': 2, 'color': colors, 'colorscale': 'Jet', 'showscale': show_legend},
+                                     marker={'size': marker_size_2d, 'color': colors, 'colorscale': 'Jet', 'showscale': show_legend},
                                      xaxis=f'x{plot_id(r, c)}',
                                      yaxis=f'y{plot_id(r, c)}',
                                      showlegend=False, #show_legend,
@@ -198,31 +201,39 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
         label_y_offset = 8  # pixels
 
         for c, (Z, F, labels, Rho) in enumerate(zip([Zx, Zy], [X, Y], [labels_X, labels_Y], [Rho_x, Rho_y])):
+
+            # select top num_features as ranked by correlation with the latent space
+
+            correlations = [np.sqrt(np.sum(Rho[i, :]**2)) for i in range(F.shape[1])]
+            top_n_idx = np.argsort(correlations)[-num_features:]
+
+
             labels = np.array(labels)
             sig_idx = []
-            for i in range(F.shape[1]):
-                if np.sqrt(np.sum(Rho[i,:]**2)) > .6:
-                    sig_idx.append(i)
-                    fig.add_shape(type='line',
-                                  xref='x', yref='y',
-                                  row=r, col=c + 1,
-                                  x0=0, y0=0,
-                                  x1=Rho[i, 0], y1=Rho[i, 1],
-                                  line={'color': 'black', 'width': 1})
+            # for i in range(F.shape[1]):
+            #     if np.sqrt(np.sum(Rho[i,:]**2)) > .6:
+            for i in top_n_idx:
+                sig_idx.append(i)
+                fig.add_shape(type='line',
+                              xref='x', yref='y',
+                              row=r, col=c + 1,
+                              x0=0, y0=0,
+                              x1=Rho[i, 0], y1=Rho[i, 1],
+                              line={'color': 'black', 'width': 1})
 
-                    if Rho[i, 0] < -0.2:
-                        annotation_xanchor = 'left'
-                    elif Rho[i, 0] > 0.2:
-                        annotation_xanchor = 'right'
-                    else:
-                        annotation_xanchor = 'center'
-                    fig.add_annotation(x=Rho[i, 0],
-                                       y=Rho[i, 1],
-                                       yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
-                                       xanchor=annotation_xanchor,
-                                       text=labels[i],
-                                       showarrow=False,
-                                       row=r, col=c + 1)
+                if Rho[i, 0] < -0.2:
+                    annotation_xanchor = 'left'
+                elif Rho[i, 0] > 0.2:
+                    annotation_xanchor = 'right'
+                else:
+                    annotation_xanchor = 'center'
+                fig.add_annotation(x=Rho[i, 0],
+                                   y=Rho[i, 1],
+                                   yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
+                                   xanchor=annotation_xanchor,
+                                   text=labels[i],
+                                   showarrow=False,
+                                   row=r, col=c + 1)
 
             # Add labels to lines
             if False:
@@ -257,7 +268,10 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
     fig.update_layout(title_text='Top Feature Correlation with Latent Space',
                       plot_bgcolor='white',
                       font_size=plot_font_size,
-                      title_font_size=plot_title_font_size)
+                      title_font_size=plot_title_font_size,
+                      title_yanchor='bottom',
+                      title_pad={'b': plot_title_font_size * 1.5},
+                      margin={'t': 100 + plot_title_font_size * 1.5})
     fig.update_annotations(font_size=plot_font_size)
 
     if show_legend:

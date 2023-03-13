@@ -379,11 +379,12 @@ def register_callbacks(app, cache, background_callback_manager):
         State('preprocess_2', 'value'),
         State('num_clusters', 'value'),
         State('num_enriched', 'value'),
+        State('num_correlated', 'value'),
         prevent_initial_call=True
     )
     def update_plot(plot_type, color_type, metadata_type, x, y, z, last_aligned, relayoutData, hires,
                     dataset, session_id, label_1, label_2,
-                    preprocess_1, preprocess_2, num_clusters, num_enriched):
+                    preprocess_1, preprocess_2, num_clusters, num_enriched, num_correlated):
 
         """Display visualization based on available data and selected visualization options
         """
@@ -487,10 +488,13 @@ def register_callbacks(app, cache, background_callback_manager):
                 color_vec = df_1.get(color_col, None)
                 fig = create_bibiplot1x2(data_1, data_2, Xg, Xe, x, y, dataset, color_vec, metadata_type,
                                          preprocess_1, preprocess_2,
-                                         label_1, label_2, size_key)
+                                         label_1, label_2, num_correlated, size_key)
                 style = plot_size_style
+                # legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
+                # Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines
+                # where the length is the value of correlation (max value 1). """
                 legend = f"""Biplots for {label_1} and {label_2} using dimensions {x+1} and {y+1} of the latent space.
-                Features having a correlation with the latent space greater than 0.6 are shown plotted as radial lines 
+                The top {num_correlated} features  most correlated with the latent space are shown plotted as radial lines 
                 where the length is the value of correlation (max value 1). """
 
             elif plot_type == 'heatmap2':
@@ -500,7 +504,7 @@ def register_callbacks(app, cache, background_callback_manager):
                 legend = f"""Feature expression levels across all cells for the top {num_enriched} differentially-expressed features
                 for each cross-modal cluster.  Clusters were identified by the Gaussian mixed model and normalized feature
                 expression ranked using the Wilcox Rank Sum test."""
-
+                style = plot_size_style
                 # Store top-enriched to cache for subsequent download
                 cache.set(f'{session_id}-enriched_1', top_enriched[1].to_json())
                 cache.set(f'{session_id}-enriched_2', top_enriched[2].to_json())

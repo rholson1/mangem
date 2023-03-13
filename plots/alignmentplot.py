@@ -7,13 +7,14 @@ import numpy as np
 import scipy.spatial.distance as sd
 from operations.alignment import calc_domainAveraged_FOSCTTM
 from app_main.utilities import df_to_data
-from app_main.constants import dataset_titles, marker_size_3d, font_size
+from app_main.constants import dataset_titles, marker_size, font_size
 
 
 def plot_alignment(df_1, df_2, label_1, label_2, dataset, x, y, z):
 
     d_1 = df_to_data(df_1)
     d_2 = df_to_data(df_2)
+    marker_size_3d = 1.25
 
     fig = go.Figure()
     fig.add_trace(go.Scatter3d(x=d_1[:, x], y=d_1[:, y], z=d_1[:, z],
@@ -68,9 +69,11 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, siz
 
     plot_font_size = font_size[size_key]['plot_font_size']
     plot_title_font_size = font_size[size_key]['plot_title_font_size']
+    tickfont_size = font_size[size_key]['tickfont_size']
+    marker_size_3d = marker_size[size_key]['3d']
 
     if size_key == 'big':
-        titles = (f'$\large{{\mu = {np.mean(pairwise_distances):.4f}}}$', f'$\large{{\mu = {np.mean(foscttm):.4f}}}$', 'Alignment')
+        titles = (f'$\huge{{\mu = {np.mean(pairwise_distances):.4f}}}$', f'$\huge{{\mu = {np.mean(foscttm):.4f}}}$', 'Alignment')
     else:
         titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$', 'Alignment')
 
@@ -98,10 +101,18 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, siz
                                showlegend=True),
                   row=1, col=3)
 
-    fig.update_layout(title_text=f'Dataset alignment in latent space: {dataset_titles.get(dataset, "Background job")}',
+    fig.update_layout(title_text=f'Alignment in latent space: {dataset_titles.get(dataset, "Background job")}',
                       legend={'itemsizing': 'constant'},
                       font_size=plot_font_size,
-                      title_font_size=plot_title_font_size)
+                      title_font_size=plot_title_font_size,
+                      title_yanchor='bottom',
+                      title_pad={'b': plot_title_font_size * 1.5},
+                      margin={'t': 100 + plot_title_font_size * 1.5},
+                      scene_camera={'eye': {'x': 1.5, 'y': 1.5, 'z': 1.5}}
+                      )
     fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
+    fig.update_scenes(xaxis_tickfont_size=tickfont_size,
+                      yaxis_tickfont_size=tickfont_size,
+                      zaxis_tickfont_size=tickfont_size)
 
     return fig

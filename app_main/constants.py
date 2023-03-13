@@ -1,14 +1,26 @@
 from enum import Enum
 
-marker_size_3d = 1.25  #0.75
+#marker_size_3d = 1.25  #0.75
 
+marker_size = {
+    'big': {
+        '3d': 2,
+        '2d': 6
+    },
+    'default': {
+        '3d': 1.25,
+        '2d': 3
+    }
+}
 
 font_size = {
     'big': {
-        'plot_font_size': 20,
-        'plot_title_font_size': 32
+        'tickfont_size': 18,
+        'plot_font_size': 32,  # 20
+        'plot_title_font_size': 44  # 32
     },
     'default': {
+        'tickfont_size': 12,
         'plot_font_size': 12,
         'plot_title_font_size': 16
     }

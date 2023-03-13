@@ -1,7 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from app_main.constants import color_types, marker_size_3d, font_size
+from app_main.constants import color_types, marker_size, font_size
 
 
 
@@ -60,7 +60,11 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2, size_
 
     fig.update_layout(title_text=f'Aligned Cells (2D)',
                       font_size=plot_font_size,
-                      title_font_size=plot_title_font_size)
+                      title_font_size=plot_title_font_size,
+                      title_yanchor='bottom',
+                      title_pad={'b': plot_title_font_size * 1.5},
+                      margin={'t': 100 + plot_title_font_size * 1.5}
+                      )
     fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
 
     return fig
@@ -86,6 +90,9 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
     x_name = df1.columns[x]
     y_name = df1.columns[y]
     z_name = df1.columns[z]
+
+    marker_size_3d = marker_size[size_key]['3d']
+    tickfont_size = font_size[size_key]['tickfont_size']
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=(label_1, label_2),
                         specs=[[{'type': 'scene'}, {'type': 'scene'}]])
@@ -126,6 +133,9 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
         camera = relayoutData['scene.camera']
     elif 'scene2.camera' in relayoutData:
         camera = relayoutData['scene2.camera']
+    else:
+        # default view, zoomed out so axes are fully visible
+        camera = {'eye': {'x': 1.5, 'y': 1.5, 'z': 1.5}}
     if camera:
         fig.update_layout(scene_camera=camera, scene2_camera=camera)
 
@@ -134,7 +144,12 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
 
     fig.update_layout(title_text=f'Aligned Cells (3D)',
                       font_size=plot_font_size,
-                      title_font_size=plot_title_font_size)
+                      title_font_size=plot_title_font_size,
+                      title_yanchor='bottom',
+                      title_pad={'b': plot_title_font_size * 1.5},
+                      margin={'t': 100 + plot_title_font_size * 1.5})
     fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
-
+    fig.update_scenes(xaxis_tickfont_size=tickfont_size,
+                      yaxis_tickfont_size=tickfont_size,
+                      zaxis_tickfont_size=tickfont_size)
     return fig

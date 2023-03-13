@@ -16,6 +16,7 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
     """
 
     plot_title_font_size = font_size[size_key]['plot_title_font_size']
+    tickfont_size = font_size[size_key]['tickfont_size']
 
     top_enriched = {}
 
@@ -70,11 +71,14 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
         fig.update_yaxes(showticklabels=False, row=1, col=col)
 
         fig.update_xaxes(showticklabels=False, row=2, col=col)
-        fig.update_yaxes(autorange='reversed', row=2, col=col)
+        fig.update_yaxes(autorange='reversed', row=2, col=col, tickfont_size=tickfont_size)
 
     fig.update_layout(title_text=f'Cross-modal Cluster Feature Expression',
                       #font_size=plot_font_size,
-                      title_font_size=plot_title_font_size)
+                      title_font_size=plot_title_font_size,
+                      title_yanchor='bottom',
+                      title_pad={'b': plot_title_font_size * 1.5},
+                      margin={'t': 100 + plot_title_font_size * 1.5})
     fig.update_annotations(font_size=plot_title_font_size)
 
     return fig, top_enriched
