@@ -52,8 +52,11 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
 
         x = [str(s) for s in display_data.columns]  # Convert to strings so numeric column names not used as indices
 
-        fig.add_trace(go.Heatmap(z=cluster, x=x, y=np.ones(len(cluster)),
-                                 colorscale='spectral', showscale=False,
+        fig.add_trace(go.Heatmap(z=[int(i) for i in cluster], x=x, y=np.ones(len(cluster)),
+                                 colorscale=px.colors.qualitative.Plotly,  # 'spectral',
+                                 zmin=1,
+                                 zmax=10,  # 10 elements in colorscale
+                                 showscale=False,
                                  hovertemplate='Cluster %{z}<extra></extra>'),
                       row=1, col=col)
         fig.add_trace(go.Heatmap(z=display_data,

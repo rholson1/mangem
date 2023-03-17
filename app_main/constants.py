@@ -15,9 +15,9 @@ marker_size = {
 
 font_size = {
     'big': {
-        'tickfont_size': 18,
-        'plot_font_size': 32,  # 20
-        'plot_title_font_size': 44  # 32
+        'tickfont_size': 24,
+        'plot_font_size': 40,  # 32,  # 20
+        'plot_title_font_size': 52,  # 44  # 32
     },
     'default': {
         'tickfont_size': 12,
@@ -47,6 +47,7 @@ plot_size = {
 
 #color_types = {'cluster': 'Cluster', 'ttype': 't-type'}
 color_types = {'cluster': 'Cross-modal Cluster', 'metadata': 'Metadata'}
+color_types_title = {'cluster': 'Cross-modal<br>Cluster', 'metadata': 'Metadata'}
 
 dataset_titles = {
     'motor': 'Mouse Motor Cortex',

@@ -4,8 +4,9 @@ import pandas as pd
 import numpy as np
 import scipy
 import plotly.express as px
-from app_main.constants import color_types, font_size, marker_size
+from app_main.constants import color_types, color_types_title, font_size, marker_size
 from operations.preprocessing import preprocess
+from operator import itemgetter
 
 
 def plot_id(r, c):
@@ -114,6 +115,8 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
         d1[:, i] = d1[:, i] / np.max(np.abs(d1[:, i])) * 0.707
         d2[:, i] = d2[:, i] / np.max(np.abs(d2[:, i])) * 0.707
 
+    marker_opacity = 0.6
+
     if color is None:
         # No color vector, so use a single group, single color, with no legend
         colors = 'black'
@@ -154,7 +157,8 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                                          yaxis=f'y{plot_id(r, c)}',
                                          showlegend=False,
                                          hoverinfo="none",
-                                         name=category
+                                         name=category,
+                                         opacity=marker_opacity
                                          ),
                               row=r, col=c)
                 c = 2
@@ -164,7 +168,8 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                                          yaxis=f'y{plot_id(r, c)}',
                                          showlegend=True,
                                          hoverinfo="none",
-                                         name=category
+                                         name=category,
+                                         opacity=marker_opacity
                                          ),
                               row=r, col=c)
         else:
@@ -175,7 +180,8 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                                      xaxis=f'x{plot_id(r, c)}',
                                      yaxis=f'y{plot_id(r, c)}',
                                      showlegend=False,
-                                     hoverinfo="none"
+                                     hoverinfo="none",
+                                     opacity=marker_opacity
                                      ),
                           row=r, col=c)
             c = 2
@@ -184,7 +190,8 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                                      xaxis=f'x{plot_id(r, c)}',
                                      yaxis=f'y{plot_id(r, c)}',
                                      showlegend=False, #show_legend,
-                                     hoverinfo="none"
+                                     hoverinfo="none",
+                                     opacity=marker_opacity
                                      ),
                           row=r, col=c)
 
@@ -208,6 +215,37 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
             top_n_idx = np.argsort(correlations)[-num_features:]
 
 
+            # find optimal radial coordinates of the top n feature annotations to limit overlap
+            # (x, y, text, radius, angle, offset)
+            points = [{'x': Rho[i, 0], 'y': Rho[i, 1], 'label': labels[i], 'r': np.sqrt(Rho[i, 0]**2 + Rho[i, 1]**2),
+                       'theta': np.arctan2(Rho[i, 1], Rho[i, 0]), 'shift': 0} for i in top_n_idx]
+            deg = np.pi / 180  # 1 degree
+            points = sorted(points, key=itemgetter('theta'))
+            # now iterate in steps: first find shifts, then apply them
+            n_iterations = 30
+            force_neighborhood = 10 * deg
+            step = 5 * deg
+            for _ in range(n_iterations):
+                # find shifts
+                for idx in range(len(points)):
+                    force_below = idx > 0 and \
+                                  (points[idx]['theta'] - points[idx-1]['theta'] < force_neighborhood)
+                    force_above = idx < len(points) - 1 and \
+                                  (points[idx + 1]['theta'] - points[idx]['theta'] < force_neighborhood)
+
+                    if force_below and force_above:
+                        pass
+                    elif force_above:
+                        points[idx]['shift'] = -1 * step
+                    elif force_below:
+                        points[idx]['shift'] = step
+
+                # apply shifts
+                for p in points:
+                    p['theta'] += p['shift']
+                    p['shift'] = 0
+
+
             labels = np.array(labels)
             sig_idx = []
             # for i in range(F.shape[1]):
@@ -219,7 +257,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                               row=r, col=c + 1,
                               x0=0, y0=0,
                               x1=Rho[i, 0], y1=Rho[i, 1],
-                              line={'color': 'black', 'width': 1})
+                              line={'color': 'gray', 'width': 1})
 
                 if Rho[i, 0] < -0.2:
                     annotation_xanchor = 'left'
@@ -227,13 +265,36 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                     annotation_xanchor = 'right'
                 else:
                     annotation_xanchor = 'center'
-                fig.add_annotation(x=Rho[i, 0],
-                                   y=Rho[i, 1],
-                                   yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
-                                   xanchor=annotation_xanchor,
-                                   text=labels[i],
+
+                # fig.add_annotation(x=Rho[i, 0],
+                #                    y=Rho[i, 1],
+                #                    yshift=label_y_offset if Rho[i, 1] > -0.1 else -label_y_offset,
+                #                    xanchor=annotation_xanchor,
+                #                    text=labels[i],
+                #                    showarrow=False,
+                #                    row=r, col=c + 1)
+
+                # alternate annotation format:
+                # 1. rotate text so that it is radial
+                # 2. perturb position (tangentially!) to avoid overlap
+            for p in points:
+                x = p['r'] * np.cos(p['theta'])
+                y = p['r'] * np.sin(p['theta'])
+                x = 0.6 * np.cos(p['theta'])
+                y = 0.6 * np.sin(p['theta'])
+
+                textangle = -np.arctan(np.tan(p['theta'])) * 180 / np.pi
+
+                #textangle = -np.arctan(Rho[i, 1] / Rho[i, 0]) * 180 / np.pi
+                fig.add_annotation(x=x,
+                                   y=y,
+                                   yshift=label_y_offset if y > -0.1 else -label_y_offset,
+                                   xanchor='center', #annotation_xanchor,
+                                   text=p['label'],
+                                   textangle=textangle,
                                    showarrow=False,
-                                   row=r, col=c + 1)
+                                   row=r, col=c + 1,
+                                   font_size=plot_font_size if len(p['label']) < 14 else plot_font_size - 10)
 
             # Add labels to lines
             if False:
@@ -272,10 +333,10 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                       title_yanchor='bottom',
                       title_pad={'b': plot_title_font_size * 1.5},
                       margin={'t': 100 + plot_title_font_size * 1.5})
-    fig.update_annotations(font_size=plot_font_size)
+    #fig.update_annotations(font_size=plot_font_size)
 
     if show_legend:
-        fig.update_layout(legend={'itemsizing': 'constant', 'title': color_types.get(color.name, color.name)})
+        fig.update_layout(legend={'itemsizing': 'constant', 'title': color_types_title.get(color.name, color.name)})
 
     return fig
 

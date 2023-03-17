@@ -73,7 +73,7 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, siz
     marker_size_3d = marker_size[size_key]['3d']
 
     if size_key == 'big':
-        titles = (f'$\huge{{\mu = {np.mean(pairwise_distances):.4f}}}$', f'$\huge{{\mu = {np.mean(foscttm):.4f}}}$', 'Alignment')
+        titles = (f'$\Huge{{\mu = {np.mean(pairwise_distances):.4f}}}$', f'$\Huge{{\mu = {np.mean(foscttm):.4f}}}$', 'Alignment')
     else:
         titles = (f'$\mu = {np.mean(pairwise_distances):.4f}$', f'$\mu = {np.mean(foscttm):.4f}$', 'Alignment')
 
@@ -83,7 +83,7 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, siz
                         specs=[[{'type': 'xy'}, {'type': 'xy'}, {'type': 'scene'}]])
 
     # box plot of distances between corresponding cells in latent space
-    fig.add_trace(go.Box(y=pairwise_distances, name='Pairwise cell distance', showlegend=False), row=1, col=1)
+    fig.add_trace(go.Box(y=pairwise_distances, name='Pairwise<br>cell distance', showlegend=False), row=1, col=1)
 
     # box plot of FOSCTTM scores (Fraction of Samples Closer Than True Match)
     fig.add_trace(go.Box(y=foscttm, name='FOSCTTM', showlegend=False), row=1, col=2)
