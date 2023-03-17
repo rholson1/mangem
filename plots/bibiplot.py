@@ -48,6 +48,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
 
     plot_title_font_size = font_size[size_key]['plot_title_font_size']
     plot_font_size = font_size[size_key]['plot_font_size']
+    long_font_size = font_size[size_key]['bibiplot_long_font_size']
     marker_size_2d = marker_size[size_key]['2d']
 
     # special handling for mouse datasets
@@ -294,7 +295,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
                                    textangle=textangle,
                                    showarrow=False,
                                    row=r, col=c + 1,
-                                   font_size=plot_font_size if len(p['label']) < 14 else plot_font_size - 10)
+                                   font_size=plot_font_size if len(p['label']) < 14 else long_font_size)
 
             # Add labels to lines
             if False:
