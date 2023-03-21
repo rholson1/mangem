@@ -175,8 +175,11 @@ def register_callbacks(app, cache, background_callback_manager):
             # triggered by a change in metadata type
             if upload_filenames[2]:  # only try to read metadata from cache if a file has been uploaded
                 metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
-                metadata = metadata_df[metadata_type]
-                return metadata.unique()
+                try:
+                    metadata = metadata_df[metadata_type]
+                    return metadata.unique()
+                except KeyError:
+                    return {}
         else:
             # always clear dropdown when changing datasets
             return {}
