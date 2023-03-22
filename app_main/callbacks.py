@@ -673,7 +673,7 @@ def register_callbacks(app, cache, background_callback_manager):
             try:
                 start_time = datetime.datetime.now()
                 proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
-                #error_msg = f'Alignment time = {datetime.datetime.now() - start_time}.'
+                error_msg = f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.'
                 print(f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.')
             except UnexpectedAlignmentMethodException:
                 raise PreventUpdate
