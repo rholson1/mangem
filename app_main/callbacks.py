@@ -671,7 +671,10 @@ def register_callbacks(app, cache, background_callback_manager):
             # Align datasets
             #proj, _ = nonlinear_manifold_alignment(X1, X2, int(ndims), int(neighbors)) #, eig_method=eig_method, eig_count=int(eig_count))
             try:
+                start_time = datetime.datetime.now()
                 proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
+                #error_msg = f'Alignment time = {datetime.datetime.now() - start_time}.'
+                print(f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.')
             except UnexpectedAlignmentMethodException:
                 raise PreventUpdate
             except PCAError:
@@ -828,6 +831,7 @@ def register_callbacks(app, cache, background_callback_manager):
             # Align datasets
             try:
                 proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors), mmdma_iterations)
+                print(f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.')
             except UnexpectedAlignmentMethodException:
                 raise PreventUpdate
             except PCAError:
