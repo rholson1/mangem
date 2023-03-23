@@ -16,7 +16,7 @@ from operations.maninetcluster.util import Timer
 
 from app_main.settings import cell_limit
 from app_main.utilities import safe_filenames, cache_key
-from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_size, font_size
+from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_size, font_size, marker_size
 
 import io
 import base64
@@ -257,6 +257,7 @@ def register_callbacks(app, cache, background_callback_manager):
 
     @app.callback(
         Output('graph-x', 'figure'),
+        Output('graph-x', 'style'),
         Output('user-data-alert-x', 'children'),  # error message
         Output('user-data-alert-x', 'is_open'),
         Input('explore-vars', 'value'),
@@ -290,9 +291,12 @@ def register_callbacks(app, cache, background_callback_manager):
 
         error_message = ''
         fig = go.Figure(data={}, layout=blank_layout)
+        size_key = 'big' if hires == ['hires'] else 'default'
+        plot_size_style = plot_size[size_key]
+        style = {}  # default
 
         if not (explore_vars and metadata_type):
-            return fig, error_message, bool(error_message)
+            return fig, style, error_message, bool(error_message)
             #raise PreventUpdate
 
         vars = [s.strip().lower() for s in explore_vars.split(',')[:2]]
@@ -308,10 +312,10 @@ def register_callbacks(app, cache, background_callback_manager):
                 metadata = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
             except ValueError:
                 error_message = 'Two data files must be uploaded before data can be explored.'
-                return fig, error_message, bool(error_message)
+                return fig, style, error_message, bool(error_message)
         else:
             error_message = 'Data must be selected or uploaded before it can be explored.'
-            return fig, error_message, bool(error_message)
+            return fig, style, error_message, bool(error_message)
 
         # convert columns to lower case
         df_1.columns = df_1.columns.str.lower()
@@ -323,7 +327,7 @@ def register_callbacks(app, cache, background_callback_manager):
         bad_vars = [v for v in vars if v.lower() not in possible_cols]
         if bad_vars:
             error_message = f'{bad_vars} not found in the selected data files.  Check for correct spelling.'
-            return fig, error_message, bool(error_message)
+            return fig, style, error_message, bool(error_message)
 
         # Generate a plot
         plot_df = pd.DataFrame()
@@ -344,20 +348,22 @@ def register_callbacks(app, cache, background_callback_manager):
         if len(vars) == 1:
             # Generate a box plot
             fig = px.box(plot_df_filtered, x=metadata_type, y=vars[0])
+            fig.update_traces(marker_size=marker_size[size_key]['2d'])
         elif len(vars) == 2:
             # Generate a scatter plot
             log_axis = log_axis or []  # handle log_axis == None
             fig = px.scatter(plot_df_filtered, x=vars[0], y=vars[1], color=metadata_type,
                              log_x='X' in log_axis, log_y='Y' in log_axis)
+            fig.update_traces(marker_size=marker_size[size_key]['2d'])
         else:
             raise Exception('Unexpected number of vars!  Bug!')
 
-        size_key = 'big' if hires == ['hires'] else 'default'
+
         fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                       font_size=font_size[size_key]['plot_font_size'],
                       title_font_size=font_size[size_key]['plot_title_font_size'])
 
-        return fig, error_message, bool(error_message)
+        return fig, plot_size_style, error_message, bool(error_message)
 
 
     @app.callback(
@@ -673,7 +679,7 @@ def register_callbacks(app, cache, background_callback_manager):
             try:
                 start_time = datetime.datetime.now()
                 proj = alignment(alignment_method, X1, X2, int(ndims), int(neighbors))
-                error_msg = f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.'
+                #error_msg = f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.'
                 print(f'Alignment time {alignment_method} = {datetime.datetime.now() - start_time}.')
             except UnexpectedAlignmentMethodException:
                 raise PreventUpdate
