@@ -1,8 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.express as px
 from operator import itemgetter
-from app_main.constants import color_types, marker_size, font_size
-
+from app_main.constants import color_types_title, marker_size, font_size
 
 
 def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2, size_key='default'):
@@ -28,6 +27,10 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2, size_
     color_col = metadata_type if color_type == 'metadata' else color_type
 
     if color_col:
+        # sorting dataframes by color column results in color order consistent with other plots
+        df1.sort_values(by=[color_col], inplace=True)
+        df2.sort_values(by=[color_col], inplace=True)
+
         fig_e = px.scatter(df1, x=x_name, y=y_name, color=color_col, color_continuous_scale=px.colors.sequential.Blackbody)
         fig_g = px.scatter(df2, x=x_name, y=y_name, color=color_col, color_continuous_scale=px.colors.sequential.Blackbody)
 
@@ -40,7 +43,7 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2, size_
         fig.add_traces(sorted(fig_g.data, key=itemgetter('legendgroup')), rows=1, cols=2)
 
         # Set the legend title
-        fig.update_layout(legend_title=metadata_type if color_type == 'metadata' else color_types[color_type],
+        fig.update_layout(legend_title=metadata_type if color_type == 'metadata' else color_types_title[color_type],
                           legend={'itemsizing': 'constant'})
 
     else:
@@ -100,6 +103,10 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
     color_col = metadata_type if color_type == 'metadata' else color_type
 
     if color_col:
+        # sorting dataframes by color column results in color order consistent with other plots
+        df1.sort_values(by=[color_col], inplace=True)
+        df2.sort_values(by=[color_col], inplace=True)
+
         fig_e = px.scatter_3d(df1, x=x_name, y=y_name, z=z_name,
                               color=color_col, color_continuous_scale=px.colors.sequential.Blackbody).update_traces(
                     marker={'size': marker_size_3d})
@@ -116,7 +123,7 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
         fig.add_traces(sorted(fig_g.data, key=itemgetter('legendgroup')), rows=1, cols=2)
 
         # Set the legend title
-        fig.update_layout(legend_title=metadata_type if color_type == 'metadata' else color_types[color_type],
+        fig.update_layout(legend_title=metadata_type if color_type == 'metadata' else color_types_title[color_type],
                           legend={'itemsizing': 'constant'})
 
     else:
