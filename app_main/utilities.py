@@ -44,7 +44,22 @@ def short_ephys_labels(label: str) -> str:
     ])
     for k, v in updates.items():
         label = re.sub(r'(?i)'+re.escape(k), v, label)  # case-insensitive matching
-        #label = label.replace(k, v)
     return label
 
 
+def short_morph_labels(label: str) -> str:
+    """Shorten morphology feature labels"""
+    updates = dict([
+        ('axon', 'ax'),
+        ('dendrite', 'dend'),
+        ('number', 'num'),
+        ('angle', 'ang'),
+        ('"apical"', 'ap'),
+        ('bifurcation', 'bifurc'),
+        ('fraction', 'frac'),
+        ('tortuosity', 'tort'),
+        ('distance', 'dist'),
+    ])
+    for k, v in updates.items():
+        label = re.sub(r'(?i)'+re.escape(k), v, label)  # case-insensitive matching
+    return label

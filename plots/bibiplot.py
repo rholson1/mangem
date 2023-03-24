@@ -7,7 +7,7 @@ import plotly.express as px
 from app_main.constants import color_types, color_types_title, font_size, marker_size
 from operations.preprocessing import preprocess
 from operator import itemgetter
-from app_main.utilities import short_ephys_labels
+from app_main.utilities import short_ephys_labels, short_morph_labels
 
 def plot_id(r, c):
     """ Compute a unique 1-based index for each plot based on its 1-based row and column"""
@@ -77,6 +77,10 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
         labels_Y = ephysY.columns.tolist()
 
     else:  # User-uploaded data
+        if dataset == 'morph':
+            data_2.rename(columns=short_morph_labels, inplace=True)
+
+
         labels_X = data_1.columns.tolist()
         labels_Y = data_2.columns.tolist()
 

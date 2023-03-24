@@ -146,6 +146,7 @@ def get_layout():
                                                     options=[
                                                         {'label': 'Mouse Motor Cortex (1208 cells)', 'value': 'motor'},
                                                         {'label': 'Mouse Visual Cortex (3654 cells)', 'value': 'visual'},
+                                                        {'label': 'Mouse Morphology (646 cells)', 'value': 'morph'},
                                                         {'label': 'Upload your data!', 'value': 'upload'},
                                                     ],
                                                     

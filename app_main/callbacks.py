@@ -15,7 +15,7 @@ from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
 
 from app_main.settings import cell_limit
-from app_main.utilities import safe_filenames, cache_key, short_ephys_labels
+from app_main.utilities import safe_filenames, cache_key, short_ephys_labels, short_morph_labels
 from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_size, font_size, marker_size
 
 import io
@@ -44,6 +44,10 @@ def register_callbacks(app, cache, background_callback_manager):
             class_name = 'hidden'
             label_1 = 'Gene Expression'
             label_2 = 'Electrophysiology'
+        elif dataset == 'morph':
+            class_name = 'hidden'
+            label_1 = 'Gene Expression'
+            label_2 = 'Morphology'
         elif dataset == 'upload':
             class_name = ''
             label_1 = ''
@@ -144,6 +148,9 @@ def register_callbacks(app, cache, background_callback_manager):
         if ctx.triggered_id == 'data-selector':
             if dataset in ('motor', 'visual'):
                 metadata_options = {'ttype': 'Transcriptomic Type (ttype)'}
+            elif dataset == 'morph':
+                metadata_df = pd.read_csv(f'data/maninetcluster/meta.csv')
+                metadata_options = metadata_df.columns
             else:
                 metadata_options = {}
                 #raise PreventUpdate
@@ -172,6 +179,13 @@ def register_callbacks(app, cache, background_callback_manager):
             if dataset in ('motor', 'visual'):
                 ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv')['ttype']
                 return ttype.unique()
+            elif dataset == 'morph':
+                metadata_df = pd.read_csv(f'data/maninetcluster/meta.csv')
+                try:
+                    metadata = metadata_df[metadata_type]
+                    return metadata.unique()
+                except KeyError:
+                    return {}
             # triggered by a change in metadata type
             if upload_filenames[2]:  # only try to read metadata from cache if a file has been uploaded
                 metadata_df = pd.read_json(cache.get(cache_key(session_id, UploadFileType.METADATA.name)))
@@ -207,6 +221,10 @@ def register_callbacks(app, cache, background_callback_manager):
             if dataset in ('motor', 'visual'):
                 df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
                 df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+                return sorted(df_1.columns), sorted(df_2.columns), '', ''
+            if dataset == 'morph':
+                df_1 = pd.read_csv(f'data/maninetcluster/gex.csv', index_col=0)
+                df_2 = pd.read_csv(f'data/maninetcluster/morph.csv', index_col=0)
                 return sorted(df_1.columns), sorted(df_2.columns), '', ''
             else:
                 return {}, {}, '', ''
@@ -305,6 +323,10 @@ def register_callbacks(app, cache, background_callback_manager):
             df_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
             df_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
             metadata = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv', index_col=0)
+        elif dataset == 'morph':
+            df_1 = pd.read_csv(f'data/maninetcluster/gex.csv', index_col=0)
+            df_2 = pd.read_csv(f'data/maninetcluster/morph.csv', index_col=0)
+            metadata = pd.read_csv(f'data/maninetcluster/meta.csv', index_col=0)
         elif dataset == 'upload':
             try:
                 df_1 = pd.read_json(cache.get(cache_key(session_id, UploadFileType.DATA_1.name)))
@@ -486,6 +508,10 @@ def register_callbacks(app, cache, background_callback_manager):
                 # if type(data_2.iloc[0, 0]) == str:
                 #     # drop the first column if it contains strings (i.e., presumably cell names)
                 #     data_2.drop(columns=data_2.columns[0], inplace=True)
+            elif dataset == 'morph':
+                data_1 = pd.read_csv(f'data/maninetcluster/gex.csv', index_col=0)
+                data_2 = pd.read_csv(f'data/maninetcluster/morph.csv', index_col=0)
+                data_2.rename(columns=short_morph_labels, inplace=True)
             else:
                 # get raw data from cache
                 file_type_1 = UploadFileType.DATA_1.name
@@ -630,6 +656,15 @@ def register_callbacks(app, cache, background_callback_manager):
                 # metadata.to_csv('data/sample_metadata.csv')
 
                 metadata_options = {'ttype': 'Transcriptomic Type'}
+
+            elif dataset == 'morph':
+                df_1 = pd.read_csv(f'data/maninetcluster/gex.csv', index_col=0)
+                X1 = np.array(df_1, dtype=float)
+                df_2 = pd.read_csv(f'data/maninetcluster/morph.csv', index_col=0)
+                X2 = np.array(df_2, dtype=float)
+                metadata_df = pd.read_csv(f'data/maninetcluster/meta.csv', index_col=0)
+                metadata_options = metadata_df.columns
+                ttype = None
             else:
                 # load data from cache
                 #try:
@@ -780,7 +815,7 @@ def register_callbacks(app, cache, background_callback_manager):
         metadata_df = None
 
         # If user-uploaded data, make sure that two data files have been uploaded (before trying to read from cache!)
-        if dataset not in ('motor', 'visual'):
+        if dataset not in ('motor', 'visual', 'morph'):
             if not (upload_filenames[0] and upload_filenames[1]):
                 status = 'Error: Two data files must be uploaded before data can be aligned.'
                 cache.set(cache_key_status, status)
@@ -802,6 +837,15 @@ def register_callbacks(app, cache, background_callback_manager):
                 # Load metadata files containing ttype column
                 ttype = pd.read_csv(f'data/mouse_{dataset}_cortex/metadata.csv')['ttype']
                 metadata_options = {'ttype': 'Transcriptomic Type'}
+
+            elif dataset == 'morph':
+                df_1 = pd.read_csv(f'data/maninetcluster/gex.csv', index_col=0)
+                X1 = np.array(df_1, dtype=float)
+                df_2 = pd.read_csv(f'data/maninetcluster/morph.csv', index_col=0)
+                X2 = np.array(df_2, dtype=float)
+                metadata_df = pd.read_csv(f'data/maninetcluster/meta.csv', index_col=0)
+                metadata_options = metadata_df.columns
+                ttype = None
             else:
                 # load data from cache
                 try:
