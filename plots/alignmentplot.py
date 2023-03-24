@@ -70,6 +70,7 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, siz
     plot_font_size = font_size[size_key]['plot_font_size']
     plot_title_font_size = font_size[size_key]['plot_title_font_size']
     tickfont_size = font_size[size_key]['tickfont_size']
+    tickfont_size_3d = font_size[size_key]['tickfont_size_3d']
     marker_size_3d = marker_size[size_key]['3d']
 
     if size_key == 'big':
@@ -111,8 +112,8 @@ def plot_alignment_and_error(df_1, df_2, label_1, label_2, dataset, x, y, z, siz
                       scene_camera={'eye': {'x': 1.5, 'y': 1.5, 'z': 1.5}}
                       )
     fig.update_annotations(font_size=plot_title_font_size)  # subplot titles are annotations
-    fig.update_scenes(xaxis_tickfont_size=tickfont_size,
-                      yaxis_tickfont_size=tickfont_size,
-                      zaxis_tickfont_size=tickfont_size)
+    fig.update_scenes(xaxis_tickfont_size=tickfont_size_3d,
+                      yaxis_tickfont_size=tickfont_size_3d,
+                      zaxis_tickfont_size=tickfont_size_3d)
 
     return fig

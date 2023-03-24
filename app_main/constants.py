@@ -15,12 +15,14 @@ marker_size = {
 
 font_size = {
     'big': {
+        'tickfont_size_3d': 20,
         'tickfont_size': 26,
         'plot_font_size': 44,  # 32,  # 20
         'bibiplot_long_font_size': 30,
         'plot_title_font_size': 60,  # 44  # 32
     },
     'default': {
+        'tickfont_size_3d': 12,
         'tickfont_size': 12,
         'plot_font_size': 12,
         'bibiplot_long_font_size': 12,

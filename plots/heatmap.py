@@ -65,7 +65,8 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
                                  colorscale='gnbu',
                                  zmax=2,
                                  zmin=-1,
-                                 showscale=False,
+                                 showscale=True,
+                                 colorbar=dict(tickfont=dict(size=tickfont_size)),
                                  hovertemplate='Cell: %{x}<br>Feature: %{y}<extra></extra>'
                                  ),
                       row=2, col=col)
@@ -81,7 +82,8 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
                       title_font_size=plot_title_font_size,
                       title_yanchor='bottom',
                       title_pad={'b': plot_title_font_size * 1.5},
-                      margin={'t': 100 + plot_title_font_size * 1.5})
+                      margin={'t': 100 + plot_title_font_size * 1.5}
+                      )
     fig.update_annotations(font_size=plot_title_font_size)
 
     return fig, top_enriched

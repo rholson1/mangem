@@ -1,6 +1,7 @@
 from pathvalidate import sanitize_filename
 import numpy as np
-
+import re
+from collections import OrderedDict
 
 def safe_filenames(label_1, label_2):
     """ Return safe and distinct filenames from the labels provided for the uploaded datasets"""
@@ -21,4 +22,29 @@ def cache_key(session_id, file_type):
 def df_to_data(df):
     """ Extract the data from a Pandas dataframe, dropping metadata columns"""
     return np.array(df.drop(columns=['cluster', 'ttype']))
+
+
+def short_ephys_labels(label: str) -> str:
+    """Given an excessively verbose ephysiology label, return an abbreviated one"""
+    updates = dict([
+              ('_', ' '),
+              ('upstroke', 'up'),
+              ('downstroke', 'down'),
+              ('square', 'sq'),
+              ('ratio', 'rat'),
+              ('resistance', 'resist'),
+              ('polarization', 'polar'),
+              ('amplitude', 'amp'),
+              ('number', 'num'),
+              ('frequency', 'freq'),
+              ('adaptation', 'adapt'),
+              ('potential', 'pot'),
+              ('..', ' '),
+              ('.', ' ')
+    ])
+    for k, v in updates.items():
+        label = re.sub(r'(?i)'+re.escape(k), v, label)  # case-insensitive matching
+        #label = label.replace(k, v)
+    return label
+
 

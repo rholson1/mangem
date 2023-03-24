@@ -15,7 +15,7 @@ from operations.preprocessing import preprocess
 from operations.maninetcluster.util import Timer
 
 from app_main.settings import cell_limit
-from app_main.utilities import safe_filenames, cache_key
+from app_main.utilities import safe_filenames, cache_key, short_ephys_labels
 from app_main.constants import UploadFileType, StoredFileType, blank_layout, plot_size, font_size, marker_size
 
 import io
@@ -43,7 +43,7 @@ def register_callbacks(app, cache, background_callback_manager):
         if dataset in ('motor', 'visual'):
             class_name = 'hidden'
             label_1 = 'Gene Expression'
-            label_2 = 'Electrophys'
+            label_2 = 'Electrophysiology'
         elif dataset == 'upload':
             class_name = ''
             label_1 = ''
@@ -478,6 +478,7 @@ def register_callbacks(app, cache, background_callback_manager):
             if dataset in ('motor', 'visual'):
                 data_1 = pd.read_csv(f'data/mouse_{dataset}_cortex/geneExp.csv', index_col=0)
                 data_2 = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+                data_2.rename(columns=short_ephys_labels, inplace=True)
                 # if type(data_2.iloc[0, 0]) == str:
                 #     # drop the first column if it contains strings (i.e., presumably cell names)
                 #     data_2.drop(columns=data_2.columns[0], inplace=True)

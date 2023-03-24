@@ -7,7 +7,7 @@ import plotly.express as px
 from app_main.constants import color_types, color_types_title, font_size, marker_size
 from operations.preprocessing import preprocess
 from operator import itemgetter
-
+from app_main.utilities import short_ephys_labels
 
 def plot_id(r, c):
     """ Compute a unique 1-based index for each plot based on its 1-based row and column"""
@@ -67,6 +67,7 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
         labels_X = geneExpr.columns.tolist()  # gene names
 
         ephysY = pd.read_csv(f'data/mouse_{dataset}_cortex/efeature.csv', index_col=0)
+        ephysY.rename(columns=short_ephys_labels, inplace=True)
         # if type(ephysY.iloc[0, 0]) == str:
         #     # drop the first column if it contains strings (i.e., presumably cell names)
         #     ephysY.drop(columns=ephysY.columns[0], inplace=True)

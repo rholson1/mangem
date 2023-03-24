@@ -95,7 +95,7 @@ def scatter3d(df1, df2, x, y, z, color_type, metadata_type, relayoutData, label_
     z_name = df1.columns[z]
 
     marker_size_3d = marker_size[size_key]['3d']
-    tickfont_size = font_size[size_key]['tickfont_size']
+    tickfont_size = font_size[size_key]['tickfont_size_3d']
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=(label_1, label_2),
                         specs=[[{'type': 'scene'}, {'type': 'scene'}]])
