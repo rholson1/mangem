@@ -346,8 +346,12 @@ def register_callbacks(app, cache, background_callback_manager):
             plot_df_filtered = plot_df
 
         if len(vars) == 1:
-            # Generate a box plot
-            fig = px.box(plot_df_filtered, x=metadata_type, y=vars[0])
+            if metadata_value:
+                # generate a violin plot
+                fig = px.violin(plot_df_filtered, x=metadata_type, y=vars[0])
+            else:
+                # Generate a set of box plots
+                fig = px.box(plot_df_filtered, x=metadata_type, y=vars[0])
             fig.update_traces(marker_size=marker_size[size_key]['2d'])
         elif len(vars) == 2:
             # Generate a scatter plot
