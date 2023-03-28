@@ -77,7 +77,7 @@ def create_heatmap2(session_id, dataset, data_1, data_2, preprocess_1, preproces
         fig.update_xaxes(showticklabels=False, row=2, col=col)
         fig.update_yaxes(autorange='reversed', row=2, col=col, tickfont_size=tickfont_size)
 
-    fig.update_layout(title_text=f'Cross-modal Cluster Feature Expression',
+    fig.update_layout(title_text=f'Features of Cross-modal Clusters',
                       #font_size=plot_font_size,
                       title_font_size=plot_title_font_size,
                       title_yanchor='bottom',

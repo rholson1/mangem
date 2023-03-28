@@ -574,19 +574,15 @@ def get_layout():
                                     children=[
                                         html.Div(id='controls-block', children=[
                                             html.Div([
-                                                # html.H3('Visualization', className='block-title'),
                                                 html.H4('Plot type'),
                                                 dcc.Dropdown(
                                                     id='plot-type',
                                                     options={
-                                                        # 'alignment': 'Dataset alignment',
-                                                        # 'alignment-error': 'Alignment error metrics',
                                                         'alignment-combo': 'Alignment',
                                                         'separate2': 'Aligned Cells (2D)',
                                                         'separate3': 'Aligned Cells (3D)',
                                                         'bibiplot': 'Top Feature Correlation with Latent Space (Bibiplot)',
-                                                        # 'heatmap': 'Gene enrichment by cluster [Mouse cortex]',
-                                                        'heatmap2': 'Cross-modal Cluster Feature Expression (Heatmap)'
+                                                        'heatmap2': 'Features of Cross-modal Clusters (Heatmap)'
                                                     },
                                                     value='alignment'
                                                 ),
@@ -606,7 +602,6 @@ def get_layout():
                                                 ),
                                                 html.H4('Component Selection',
                                                         title='Select components of the aligned datasets to be plotted .'),
-                                                # html.Dialog()
                                                 html.Label([' X: ',
                                                             dcc.Input(id='component_x',
                                                                       type='number',
@@ -628,7 +623,7 @@ def get_layout():
                                                                       step=1,
                                                                       value=3,
                                                                       className='component_input')]),
-                                                html.H3('Cross-modal Cluster Feature Expression'),
+                                                html.H3('Features of Cross-modal Clusters'),
                                                 html.H4([
                                                     'Number of Top Features per cluster ',
                                                     dcc.Input(id='num_enriched',
@@ -651,7 +646,7 @@ def get_layout():
 
                                                 dcc.Checklist(id='hires-plots',
                                                               options=[{'label': 'High-resolution plots', 'value': 'hires'}]),
-                                                html.Button('Download Most Expressed Features',
+                                                html.Button('Download Top Features',
                                                             id='btn-enriched-download',
                                                             className='operations-button'),
                                                 dcc.Download(id='download-enriched'),
