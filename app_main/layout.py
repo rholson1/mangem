@@ -829,13 +829,12 @@ def get_layout():
                                                 html.H5('Top Feature Correlation with Latent Space (Bibiplot)'),
                                                 html.Span('Display biplots in two dimensions of the latent space. '
                                                           'Aligned datasets are projected along with lines '
-                                                          'describing the correlation of features with the '
-                                                          'latent space.')
+                                                          'describing the correlation of features with their '
+                                                          'latent space representation.')
                                             ]),
                                             html.Li([
-                                                html.H5('Cross-modal Cluster Feature Expression (Heatmap)'),
-                                                html.Span('Computes and plots the top differentially-expressed '
-                                                          'features by cross-modal cluster.')
+                                                html.H5('Features of Cross-modal Clusters (Heatmap)'),
+                                                html.Span('Computes and plots the top features by cross-modal cluster.')
                                             ]),
 
                                         ]),
