@@ -219,7 +219,7 @@ label, legend {
   text-align: center;
 }
 
-#user-data-alert-bg {
+#user-data-alert-bg, #user-data-alert-dl {
   font-size: 12pt;
   font-weight: bold;
 }

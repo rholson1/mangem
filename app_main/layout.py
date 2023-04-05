@@ -144,9 +144,9 @@ def get_layout():
                                                 dcc.Dropdown(
                                                     id='data-selector',
                                                     options=[
-                                                        {'label': 'Mouse Motor Cortex (1208 cells)', 'value': 'motor'},
-                                                        {'label': 'Mouse Visual Cortex (3654 cells)', 'value': 'visual'},
-                                                        {'label': 'Mouse Morphology (646 cells)', 'value': 'morph'},
+                                                        {'label': 'Mouse Motor Cortex: gene expression/electrohphysiology (1208 cells)', 'value': 'motor'},
+                                                        {'label': 'Mouse Visual Cortex: gene expression/electrophysiology (3654 cells)', 'value': 'visual'},
+                                                        {'label': 'Mouse Visual Cortex: gene expression/morphology (646 cells)', 'value': 'morph'},
                                                         {'label': 'Upload your data!', 'value': 'upload'},
                                                     ],
                                                     
@@ -646,6 +646,9 @@ def get_layout():
 
                                                 dcc.Checklist(id='hires-plots',
                                                               options=[{'label': 'High-resolution plots', 'value': 'hires'}]),
+                                                html.Button('Refresh Plot',
+                                                            id='btn-refresh-plot',
+                                                            className='operations-button'),
                                                 html.Button('Download Top Features',
                                                             id='btn-enriched-download',
                                                             className='operations-button'),
@@ -681,6 +684,11 @@ def get_layout():
                                   is_open=False,
                                   dismissable=True),
                         dbc.Alert(id='user-data-alert-bg',
+                                  children=[],
+                                  color='info',
+                                  is_open=False,
+                                  dismissable=True),
+                        dbc.Alert(id='user-data-alert-dl',
                                   children=[],
                                   color='info',
                                   is_open=False,

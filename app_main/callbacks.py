@@ -406,6 +406,7 @@ def register_callbacks(app, cache, background_callback_manager):
         Input('store-aligned', 'data'),
         Input('graph-combined', 'relayoutData'),
         Input('hires-plots', 'value'),
+        Input('btn-refresh-plot', 'n_clicks'),
         State('data-selector', 'value'),
         State('session_id', 'data'),
         State('store-label-1', 'data'),
@@ -417,7 +418,7 @@ def register_callbacks(app, cache, background_callback_manager):
         State('num_correlated', 'value'),
         prevent_initial_call=True
     )
-    def update_plot(plot_type, color_type, metadata_type, x, y, z, last_aligned, relayoutData, hires,
+    def update_plot(plot_type, color_type, metadata_type, x, y, z, last_aligned, relayoutData, hires, refresh_btn,
                     dataset, session_id, label_1, label_2,
                     preprocess_1, preprocess_2, num_clusters, num_enriched, num_correlated):
 
@@ -546,8 +547,8 @@ def register_callbacks(app, cache, background_callback_manager):
                 expression ranked using the Wilcox Rank Sum test."""
                 style = plot_size_style
                 # Store top-enriched to cache for subsequent download
-                cache.set(f'{session_id}-enriched_1', top_enriched[1].to_json())
-                cache.set(f'{session_id}-enriched_2', top_enriched[2].to_json())
+                cache.set(f'{session_id}-topfeatures_1', top_enriched[1].to_json())
+                cache.set(f'{session_id}-topfeatures_2', top_enriched[2].to_json())
         else:
             # No plot type specified - show a blank plot
             fig = go.Figure(data={}, layout=blank_layout)
@@ -1052,6 +1053,8 @@ def register_callbacks(app, cache, background_callback_manager):
 
     @app.callback(
         Output('download-enriched', 'data'),
+        Output('user-data-alert-dl', 'is_open'),
+        Output('user-data-alert-dl', 'children'),
         Input('btn-enriched-download', 'n_clicks'),
         State('session_id', 'data'),
         State('store-label-1', 'data'),
@@ -1059,26 +1062,25 @@ def register_callbacks(app, cache, background_callback_manager):
         prevent_initial_call=True,
     )
     def download_enriched(n_clicks, session_id, label_1, label_2):
-        """ Download enriched data.  Since there are two dataframes, the best way to handle this is probably to download
-        a .zip file containing two .csv files.
+        """ Download top features.  Since there are two dataframes, download a .zip file containing two .csv files.
         """
-
         # read data frames from cache
         try:
-            df_1 = pd.read_json(cache.get(f'{session_id}-enriched_1'))
-            df_2 = pd.read_json(cache.get(f'{session_id}-enriched_2'))
+            df_1 = pd.read_json(cache.get(f'{session_id}-topfeatures_1'))
+            df_2 = pd.read_json(cache.get(f'{session_id}-topfeatures_2'))
         except ValueError:
-            raise PreventUpdate
+            # return an error message
+            return dash.no_update, True, 'Before downloading top features, you must display the Features of Cross-modal Clusters plot'
 
         # make labels safe to use in filenames (and distinct)
         labels = safe_filenames(label_1, label_2)
 
         bytes_io = io.BytesIO()
         with zipfile.ZipFile(bytes_io, mode='w') as zf:
-            zf.writestr(f'enriched_{labels[0]}.csv', df_1.to_csv())
-            zf.writestr(f'enriched_{labels[1]}.csv', df_2.to_csv())
+            zf.writestr(f'top_features_{labels[0]}.csv', df_1.to_csv())
+            zf.writestr(f'top_features_{labels[1]}.csv', df_2.to_csv())
 
-        return dcc.send_bytes(bytes_io.getvalue(), 'enriched.zip', type='application/zip')
+        return dcc.send_bytes(bytes_io.getvalue(), 'top_features.zip', type='application/zip'), False, dash.no_update
 
     @app.callback(
         Output('download-sample-data', 'data'),
