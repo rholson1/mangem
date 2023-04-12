@@ -8,6 +8,10 @@ from app_main.constants import color_types, color_types_title, font_size, marker
 from operations.preprocessing import preprocess
 from operator import itemgetter
 from app_main.utilities import short_ephys_labels, short_morph_labels
+import math
+
+twopi = 2 * math.pi
+
 
 def plot_id(r, c):
     """ Compute a unique 1-based index for each plot based on its 1-based row and column"""
@@ -224,20 +228,29 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
             # find optimal radial coordinates of the top n feature annotations to limit overlap
             # (x, y, text, radius, angle, offset)
             points = [{'x': Rho[i, 0], 'y': Rho[i, 1], 'label': labels[i], 'r': np.sqrt(Rho[i, 0]**2 + Rho[i, 1]**2),
-                       'theta': np.arctan2(Rho[i, 1], Rho[i, 0]), 'shift': 0} for i in top_n_idx]
+                       'theta': np.arctan2(Rho[i, 1], Rho[i, 0]) % twopi, 'shift': 0} for i in top_n_idx]
             deg = np.pi / 180  # 1 degree
             points = sorted(points, key=itemgetter('theta'))
             # now iterate in steps: first find shifts, then apply them
             n_iterations = 30
-            force_neighborhood = 10 * deg
-            step = 5 * deg
+            force_neighborhood = 8 * deg  # was 10
+            step = 2 * deg  # was 5
+
+            # print('\t'.join([p['label'] for p in sorted(points, key=itemgetter('label'))]))
+
             for _ in range(n_iterations):
+                # print('\t'.join([str(p['theta']) for p in sorted(points, key=itemgetter('label'))]))
                 # find shifts
                 for idx in range(len(points)):
-                    force_below = idx > 0 and \
-                                  (points[idx]['theta'] - points[idx-1]['theta'] < force_neighborhood)
-                    force_above = idx < len(points) - 1 and \
-                                  (points[idx + 1]['theta'] - points[idx]['theta'] < force_neighborhood)
+                    if idx == 0:
+                        force_below = (points[0]['theta'] - points[-1]['theta']) % twopi < force_neighborhood
+                        force_above = (points[1]['theta'] - points[0]['theta']) % twopi < force_neighborhood
+                    elif idx == len(points) - 1:
+                        force_below = (points[idx]['theta'] - points[idx-1]['theta']) % twopi < force_neighborhood
+                        force_above = (points[0]['theta'] - points[idx]['theta']) % twopi < force_neighborhood
+                    else:
+                        force_below = (points[idx]['theta'] - points[idx-1]['theta']) % twopi < force_neighborhood
+                        force_above = (points[idx+1]['theta'] - points[idx]['theta']) % twopi < force_neighborhood
 
                     if force_below and force_above:
                         pass
@@ -248,8 +261,31 @@ def create_bibiplot1x2(data_1, data_2, d1, d2, x_col, y_col, dataset, color, met
 
                 # apply shifts
                 for p in points:
-                    p['theta'] += p['shift']
+                    p['theta'] = (p['theta'] + p['shift']) % twopi
                     p['shift'] = 0
+
+                # resort
+                points = sorted(points, key=itemgetter('theta'))
+
+            # for _ in range(n_iterations):
+            #     # find shifts
+            #     for idx in range(len(points)):
+            #         force_below = idx > 0 and \
+            #                       (points[idx]['theta'] - points[idx-1]['theta'] < force_neighborhood)
+            #         force_above = idx < len(points) - 1 and \
+            #                       (points[idx + 1]['theta'] - points[idx]['theta'] < force_neighborhood)
+            #
+            #         if force_below and force_above:
+            #             pass
+            #         elif force_above:
+            #             points[idx]['shift'] = -1 * step
+            #         elif force_below:
+            #             points[idx]['shift'] = step
+            #
+            #     # apply shifts
+            #     for p in points:
+            #         p['theta'] += p['shift']
+            #         p['shift'] = 0
 
 
             labels = np.array(labels)
