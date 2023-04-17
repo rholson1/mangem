@@ -80,9 +80,9 @@ def get_layout():
                                             html.A('Daifeng Wang, Ph.D.', href='mailto:daifeng.wang@wisc.edu'),
                                         ]),
                                         html.P([
-                                            html.A(href='https://mediaspace.wisc.edu/media/DemoA+Manifold+Alignment+of+Single+Cell+Multi-modal+Data/1_mm61ps0r',
+                                            html.A(href='https://mediaspace.wisc.edu/media/MANGEM+Demo/1_99t20udb',
                                                    children=['Video Demo'], target='_blank'),
-                                            ' for an earlier version of this app.']
+                                            '']
                                         ),
                                         html.H3('App compatibility'),
                                         html.P('This app has been tested on the following operating systems and browsers'),
