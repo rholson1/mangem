@@ -1,7 +1,9 @@
 from pathvalidate import sanitize_filename
 import numpy as np
 import re
-from collections import OrderedDict
+import redis
+from datetime import timedelta
+
 
 def safe_filenames(label_1, label_2):
     """ Return safe and distinct filenames from the labels provided for the uploaded datasets"""
@@ -63,3 +65,42 @@ def short_morph_labels(label: str) -> str:
     for k, v in updates.items():
         label = re.sub(r'(?i)'+re.escape(k), v, label)  # case-insensitive matching
     return label
+
+
+def unique_visitors():
+    """Report the number of "unique" visitors to the site"""
+
+    # check if log has been accessed today
+    r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+    if r.exists('unique_visitors'):
+        return r.get('unique_visitors')
+
+    # for testing
+    access_log = r'/var/log/nginx/access.log'
+
+    regex = r'^(?P<ip>\S+)\s+(\S+)\s+(\S+)\s+\[((?P<date>[^:]+)[^\]]+)\]\s+"([A-Z]+)([^"]+)?HTTP/[0-9.]+"\s+([0-9]{3})\s+([0-9]+|-)\s+"([^"]*)"\s+"(?P<agent>[^"]*)"\s+"([^"]*)"'
+    log_parser = re.compile(regex)
+    u = set()
+    first = True
+    try:
+        with open(access_log, 'r') as f:
+            for line in f:
+                if first:
+                    try:
+                        match = log_parser.match(line)
+                        startdate = match.groupdict()['date']
+                        first = False
+                    except:
+                        pass
+                if '_dash-update-component' in line:
+                    # store date, ip, browser string
+                    match = log_parser.match(line)
+                    if match:
+                        mg = match.groupdict()
+                        u.add((mg['ip'], mg['date'], mg['agent']))
+    except FileNotFoundError:
+        return ''
+
+    response = f'{len(u)} visitors since {startdate}'
+    r.setex('unique_visitors', timedelta(days=1), response)
+    return response

@@ -6,6 +6,7 @@ import uuid
 
 from app_main.settings import appname
 from app_main.constants import UploadFileType, blank_layout, color_types
+from app_main.utilities import unique_visitors
 
 
 def get_layout():
@@ -119,7 +120,9 @@ def get_layout():
                                                     html.Td('')
                                                 ]),
                                             ])
-                                        ])
+                                        ]),
+                                        html.Br(),
+                                        html.P(children=unique_visitors())
                                     ]
                                 ),
 
