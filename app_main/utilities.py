@@ -101,6 +101,6 @@ def unique_visitors():
     except FileNotFoundError:
         return ''
 
-    response = f'{len(u)} visitors since {startdate}'
+    response = f'{len(u)} visitors since {startdate} (updated daily)'
     r.setex('unique_visitors', timedelta(days=1), response)
     return response
