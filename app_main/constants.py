@@ -56,7 +56,7 @@ color_types_title = {'cluster': 'Cross-modal<br>Cluster', 'metadata': 'Metadata'
 dataset_titles = {
     'motor': 'Mouse Motor Cortex: gene exp. & electrophys.',
     'visual': 'Mouse Visual Cortex: gene exp. & electrophys.',
-    'morph': 'Mouse Visual Cortex: gene exp. & morphology',
+    'morph': 'Mouse Motor Cortex: gene exp. & morphology',
     'upload': 'Custom Data'
     }
 

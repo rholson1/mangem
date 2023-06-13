@@ -9,7 +9,7 @@ provides users with various downstream analyses of aligned cells and visualizes 
 identifying multi-modal cell clusters of cells and detecting correlated genes with electrophysiological and 
 morphological features.
 
-# Deployment on Amazon AWS with Elastic Beanstalk
+## Deployment on Amazon AWS with Elastic Beanstalk
 We deployed MANGEM on AWS using Elastic Beanstalk.  Documentation on deploying Python applications using AWS Elastic 
 Beanstalk is available in the AWS Elastic Beanstalk Developer Guide: 
 https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create-deploy-python-apps.html

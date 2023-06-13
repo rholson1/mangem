@@ -58,6 +58,11 @@ def scatter2d(df1, df2, x, y, color_type, metadata_type, label_1, label_2, size_
     fig.update_xaxes(matches='x')
     fig.update_yaxes(matches='y')
 
+    # Add axis labels
+    fig.update_yaxes(title_text=f'Component {y + 1}', row=1, col=1)
+    fig.update_xaxes(title_text=f'Component {x + 1}', row=1, col=1)
+    fig.update_xaxes(title_text=f'Component {x + 1}', row=1, col=2)
+
     plot_font_size = font_size[size_key]['plot_font_size']
     plot_title_font_size = font_size[size_key]['plot_title_font_size']
 

@@ -1084,12 +1084,15 @@ def register_callbacks(app, cache, background_callback_manager):
 
     @app.callback(
         Output('download-sample-data', 'data'),
-        Input('sample-data-download-button', 'n_clicks'),
+        Input('sample-data-download-button1', 'n_clicks'),
+        Input('sample-data-download-button2', 'n_clicks'),
         prevent_initial_call=True
     )
-    def download_sample_data(n_clicks):
-        return dcc.send_file('./assets/mouse_motor_cortex.zip')
-
+    def download_sample_data(n_clicks_1, n_clicks_2):
+        if ctx.triggered_id == 'sample-data-download-button1':
+            return dcc.send_file('./assets/mouse_motor_cortex_gex_ephys.zip')
+        else:
+            return dcc.send_file('./assets/mouse_motor_cortex_gex_morph.zip')
 
     @app.callback(
         Output('about-page', 'className'),
@@ -1112,12 +1115,20 @@ def register_callbacks(app, cache, background_callback_manager):
     @app.callback(
         Output('left-panel-tabs', 'value'),
         Input({'type': 'next-button', 'index': ALL}, 'n_clicks'),
+        Input({'type': 'prev-button', 'index': ALL}, 'n_clicks'),
         Input('data-selector', 'value'),
         State('left-panel-tabs', 'value')
     )
-    def handle_next_button(n_clicks, data_type, selected_tab):
+    def handle_next_button(n_clicks, n_clicks2, data_type, selected_tab):
         if ctx.triggered_id == 'data-selector':
             if data_type == 'background' and selected_tab == 'tab-1':
+                return 'tab-4'
+        elif ctx.triggered_id and ctx.triggered_id.get('type', '') == 'prev-button':
+            if selected_tab == 'tab-3':
+                return 'tab-2'
+            elif selected_tab == 'tab-4':
+                return 'tab-3'
+            elif selected_tab == 'tab-5':
                 return 'tab-4'
         else:
             if selected_tab == 'tab-2':

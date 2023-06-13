@@ -149,7 +149,7 @@ def get_layout():
                                                     options=[
                                                         {'label': 'Mouse Motor Cortex: gene expression/electrohphysiology (1208 cells)', 'value': 'motor'},
                                                         {'label': 'Mouse Visual Cortex: gene expression/electrophysiology (3654 cells)', 'value': 'visual'},
-                                                        {'label': 'Mouse Visual Cortex: gene expression/morphology (646 cells)', 'value': 'morph'},
+                                                        {'label': 'Mouse Motor Cortex: gene expression/morphology (646 cells)', 'value': 'morph'},
                                                         {'label': 'Upload your data!', 'value': 'upload'},
                                                     ],
                                                     
@@ -510,8 +510,12 @@ def get_layout():
                                                 dcc.Download(id='download-aligned')
                                             ]),
                                             html.Div([
-                                                html.Button('Next Step', className='operations-button',
-                                                            id={'type': 'next-button', 'index': 2}),
+                                                html.Div(className='obh-container', children=[
+                                                    html.Button('Prev Step', className='operations-button-half',
+                                                                id={'type': 'prev-button', 'index': 2}),
+                                                    html.Button('Next Step', className='operations-button-half',
+                                                                id={'type': 'next-button', 'index': 2})
+                                                    ]),
                                                 html.A(html.Button('Reset Application', className='operations-button'),
                                                        href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
@@ -559,8 +563,12 @@ def get_layout():
                                                 dcc.Download(id='download-cluster'),
                                             ]),
                                             html.Div([
-                                                html.Button('Next Step', className='operations-button',
-                                                            id={'type': 'next-button', 'index': 3}),
+                                                html.Div(className='obh-container', children=[
+                                                    html.Button('Prev Step', className='operations-button-half',
+                                                                id={'type': 'prev-button', 'index': 3}),
+                                                    html.Button('Next Step', className='operations-button-half',
+                                                                id={'type': 'next-button', 'index': 3}),
+                                                ]),
                                                 html.A(html.Button('Reset Application', className='operations-button'),
                                                        href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
@@ -658,6 +666,8 @@ def get_layout():
                                                 dcc.Download(id='download-enriched'),
                                             ]),
                                             html.Div([
+                                                html.Button('Prev Step', className='operations-button',
+                                                            id={'type': 'prev-button', 'index': 4}),
                                                 html.A(html.Button('Reset Application', className='operations-button'),
                                                        href='javascript:window.location.href=/^[^?]+/.exec(window.location.href)[0]'),
                                             ])
@@ -759,18 +769,27 @@ def get_layout():
                                                'User uploaded data must be in .csv files where the first row '
                                                'contains column names and the first column contains cell '
                                                'identifiers.',
-                                               'Files must have consistent cell (row) order.',
-                                               html.Ol(children=[
-                                                   html.Li('Modality 1 single-cell data file (e.g. gene expression, neuron morphology, or electrophysiological feature)'),
-                                                   html.Li('Modality 2 single-cell data file'),
-                                                   html.Li('Single-cell metadata/phenotype data, expected to be categorical')])
-                                               ]
-                                               ),
-                                        html.P('The first 1000 rows of uploaded data files are used.'),
+                                               'Files must have consistent cell (row) order.']),
+                                        html.Ol(children=[
+                                            html.Li(
+                                                'Modality 1 single-cell data file (e.g. gene expression, neuron morphology, or electrophysiological feature)'),
+                                            html.Li('Modality 2 single-cell data file'),
+                                            html.Li('Single-cell metadata/phenotype data, expected to be categorical')]),
+                                        html.P(['The first 1000 rows of uploaded data files are used.  Larger datasets will be truncated, so we recommend reducing the data size by ',
+                                                'computation of ', html.A('metacells', href='https://doi.org/10.1186/s13059-019-1812-2'),
+                                                ' or ', html.A('SEACells', href='https://doi.org/10.1038/s41587-023-01716-9'),
+                                                ' before upload.']),
                                         html.P([
-                                            'A sample dataset may be downloaded here: ',
-                                            html.Button('Sample Data (Mouse motor cortex)', id='sample-data-download-button'),
-                                            dcc.Download(id='download-sample-data')]),
+                                            'Sample datasets may be downloaded here: ',
+                                            html.Button('Mouse motor cortex (Gene expression, electrophysiology)',
+                                                        id='sample-data-download-button1'),
+                                            ' ',
+                                            html.Button('Mouse motor cortex (Gene expression, morphology)',
+                                                        id='sample-data-download-button2'),
+                                            dcc.Download(id='download-sample-data')]
+
+                                        ),
+
                                         html.H5('Preprocessing'),
                                         html.P('Optionally, select a preprocessing operation to be performed '
                                                'on each modality prior to alignment.  The currently supported '
@@ -791,6 +810,16 @@ def get_layout():
                                                'The Linear Manifold Alignment and Nonlinear Manifold Alignment methods will '
                                                'also use the number of nearest neighbors to be used in constructing '
                                                'similarity matrices.'),
+                                        html.P('Available alignment methods include:'),
+                                        html.Ul([
+                                            html.Li([html.A('Linear Manifold Alignment', href='https://doi.org/10.1201/b11431')]),
+                                            html.Li([html.A('Nonlinear Manifold Alignment', href='https://doi.org/10.1201/b11431')]),
+                                            html.Li(['Canonical Correlation Analysis']),
+                                            html.Li([html.A('Manifold Alignment with Maximum Mean Discrepancy', href='https://doi.org/10.1145/3388440.3412410')]),
+                                            html.Li([html.A('UnionCom', href='https://doi.org/10.1093/bioinformatics/btaa443'),
+                                                     ' (unsupervised topological alignment for single-cell multi-omics integration)'])
+                                        ]),
+
                                         html.P('Click the "Align Datasets" button to perform the alignment. '
                                                'If the alignment parameters are changed, the "Align Datasets" '
                                                'button will need to be used again to recompute the alignment.'),
@@ -802,7 +831,16 @@ def get_layout():
                                                'as well as the number of cross-modal cell clusters which should be '
                                                'identified.  Click the '
                                                '"Download Clusters" button to download files that label '
-                                               'cells with the identified cross-modal clusters.')
+                                               'cells with the identified cross-modal clusters.'),
+                                        html.P('Available clustering methods include:'),
+                                        html.Ul([
+                                            html.Li('Gaussian Mixture Model: '
+                                                    'A probabilistic clustering algorithm similar to K-means which is capable of classifying elliptical groupings.'),
+                                            html.Li('K-means: ' 
+                                                    'A very explainable, lightweight algorithm that works best with even-sized circular clusters.'),
+                                            html.Li('Hierarchical: '
+                                                    'Point-wise agglomerative clustering technique which works best for separable clusters of non-elliptical shapes.'),
+                                        ])
                                     ]),
                                     html.Li([
                                         html.H4('Analysis'),
