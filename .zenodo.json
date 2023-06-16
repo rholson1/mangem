@@ -1,0 +1,25 @@
+{
+    "license": "MIT",
+    "title": "MANGEM: a web app for Multimodal Analysis of Neuronal Gene expression, Electrophysiology and Morphology",
+    "notes": "This work was supported by National Institutes of Health grants, RF1MH128695, R21NS128761, R21NS127432, R01AG067025, R03NS123969 to D.W., P50HD105353 to the Waisman Center., and start-up funding for D.W. from the Office of the Vice Chancellor for Research and Graduate Education at the University of Wisconsin–Madison.",
+
+    "upload_type": "software",
+    "creators": [
+        {
+            "affiliation": "University of Wisconsin - Madison",
+            "name": "Olson, R. H.",
+            "orcid": "0000-0002-8109-8366"
+        },
+        {
+            "affiliation": "University of Wisconsin - Madison",
+            "name": "Kalafut, N. C.",
+            "orcid": "0000-0003-1421-0829"
+        },
+        {
+            "affiliation": "University of Wisconsin - Madison",
+            "name": "Wang, D.",
+            "orcid": "0000-0001-9190-3704"
+        }
+    ],
+    "access_right": "open"
+}
