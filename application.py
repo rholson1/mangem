@@ -13,6 +13,8 @@ background_callback_manager = CeleryManager(celery_app)
 app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME], background_callback_manager=background_callback_manager)
 app.config.update({
     'url_base_pathname': '/mangem/',
+    'routes_pathname_prefix': '/mangem/',
+    'requests_pathname_prefix': '/mangem/'
 })
 app.title = 'MANGEM'
 application = app.server
