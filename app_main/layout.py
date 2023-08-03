@@ -141,8 +141,23 @@ def get_layout():
                                                            className='fa-regular fa-circle-question')
                                                 ]),
                                                 dbc.Tooltip(
-                                                    'Select an existing dataset or upload your own .csv files.',
-                                                    target='data-select-tooltip'
+                                                    [
+                                                        'Select a preloaded dataset or upload your own .csv files.',
+                                                        html.H3('Preloaded Datasets'),
+                                                        html.Ol([
+                                                            'Two main data sources are utilized for MANGEM’s pre-packaged datasets.  First, patch-seq data of 3,654 single-cells from the ',
+                                                            html.A('mouse visual cortex', href='https://pubmed.ncbi.nlm.nih.gov/33186530/'),
+                                                            ' was used to generate ',
+                                                            html.A('electrophysiological and morphological features', href='https://www.nature.com/articles/s42003-021-02807-6'),
+                                                            '.  MANGEM provides a preset combining gene expression (1,302 genes) and electrophysiological features (41 features) on this dataset.  ',
+                                                            'Second, 1,208 single-cells from the ',
+                                                            html.A('mouse motor cortex', href='https://www.nature.com/articles/s41586-020-2907-3'),
+                                                            ' were processed similarly (1,286 genes, 29 features).  MANGEM provides two presets from this dataset, each containing gene expression ',
+                                                            'and one of electrophysiological or morphological features.  The latter preset includes a subset of 646 cells with 1000 genes and 61 morphological features.'
+                                                        ])
+
+                                                     ],
+                                                    target='data-select-tooltip', trigger='legacy'
                                                 ),
                                                 dcc.Dropdown(
                                                     id='data-selector',
@@ -219,6 +234,7 @@ def get_layout():
 
                                                                     ],
                                                                     target='modality-1-tooltip',
+                                                                    trigger='legacy'
                                                                 ),
                                                                 dcc.Input(
                                                                     id='upload_1_label',
@@ -286,7 +302,8 @@ def get_layout():
                                                                         )]
                                                                     )
                                                                     ],
-                                                                    target='modality-2-tooltip'
+                                                                    target='modality-2-tooltip',
+                                                                    trigger='legacy'
                                                                 ),
                                                                 dcc.Input(
                                                                     id='upload_2_label',
@@ -342,7 +359,8 @@ def get_layout():
                                                                         )]
                                                                                )
                                                                     ],
-                                                                    target='metadata-tooltip'
+                                                                    target='metadata-tooltip',
+                                                                    trigger='legacy'
                                                                 ),
                                                                 dcc.Upload(id={'type': 'dynamic-upload',
                                                                                'index': UploadFileType.METADATA},
@@ -363,7 +381,7 @@ def get_layout():
                                                 ]),
                                                 dbc.Tooltip(
                                                     'Each dataset may optionally be transformed prior to alignment.',
-                                                    target='preprocessing-tooltip'
+                                                    target='preprocessing-tooltip', trigger='legacy'
                                                 ),
                                                 html.Label([
                                                     html.Span('', id='preprocess-label-1'),
@@ -401,7 +419,7 @@ def get_layout():
                                                     'and select a cell phenotype from the metadata dropdown '
                                                     'to see a set of boxplots (one variable) or a scatter plot '
                                                     '(two variables).'
-                                                ], target='explore-tooltip'),
+                                                ], target='explore-tooltip', trigger='legacy'),
                                                 html.Label([
                                                     html.Span('', id='explore-label-1'),
                                                     ': ',
@@ -475,13 +493,39 @@ def get_layout():
                                                 html.H3('Dataset Alignment', className='block-title'),
                                                 html.Label([
                                                     'Alignment Algorithm:',
+                                                    html.I(id='alignment-tooltip',
+                                                           className='fa-regular fa-circle-question'),
                                                     dcc.Dropdown(id='alignment-method', options=[
-                                                        {'label': 'Linear Manifold Alignment', 'value': 'lma'},
-                                                        {'label': 'Nonlinear Manifold Alignment', 'value': 'nlma'},
-                                                        {'label': 'Canonical Correlation Analysis', 'value': 'cca'},
-                                                        {'label': 'Manifold Alignment with Maximum Mean Discrepancy', 'value': 'mmdma', 'disabled': False},
-                                                        {'label': 'UnionCom', 'value': 'unioncom', 'disabled': False},
-                                                    ])
+                                                        {'label': ['Linear Manifold Alignment'], 'value': 'lma'},
+                                                        {'label': ['Nonlinear Manifold Alignment'], 'value': 'nlma'},
+                                                        {'label': ['Canonical Correlation Analysis'], 'value': 'cca'},
+                                                        {'label': ['Manifold Alignment with Maximum Mean Discrepancy'], 'value': 'mmdma', 'disabled': False},
+                                                        {'label': ['UnionCom'], 'value': 'unioncom', 'disabled': False},
+                                                    ]),
+                                                    dbc.Tooltip([
+                                                        'Alignment Algorithms:',
+                                                        html.Ul([
+                                                            html.Li([
+                                                                html.A('Linear manifold alignment', href='https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-6329-2'),
+                                                                ' is best for applications involving modalities which are closely related.  The linear nature of the method will prevent overfitting, but can miss more complex relationships.']),
+                                                            html.Li([
+                                                                html.A('Nonlinear manifold alignment', href='https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-6329-2'),
+                                                                ' generates an embedding function mapping each modality onto the same manifold, allowing for interpretation of complex relationships.  NLMA will closely match associated cells, but might sacrifice cluster accuracy to do so.'
+                                                            ]),
+                                                            html.Li([
+                                                                html.A('Canonical correlation analysis', href='https://doi.org/10.2307/2333955'),
+                                                                ' is a robust method which specializes in characterizing the variance of the data overall.  This is best for modalities with few, closely related features.'
+                                                            ]),
+                                                            html.Li([
+                                                                html.A('Manifold Alignment with Maximum Mean Discrepancy', href='https://pubmed.ncbi.nlm.nih.gov/34632462/'),
+                                                                ' is an iterative machine learning method which aligns modalities using a series of counterbalanced losses.  MMD-MA is particularly good at identifying cell type clusters, but takes comparatively long to run.'
+                                                                ]),
+                                                            html.Li([
+                                                                html.A('UnionCom', href='https://doi.org/10.1093/bioinformatics/btaa443'),
+                                                                ' infers cross-modal correspondence before projecting each modality to similar latent spaces.  UnionCom is particularly good with aligning unmatched modalities, but takes a comparatively long time to run.']
+                                                            )
+                                                        ])
+                                                    ], target='alignment-tooltip', trigger='legacy'),
                                                 ]),
                                                 html.Label([
                                                     'Latent space dimension: ',
@@ -538,6 +582,8 @@ def get_layout():
                                                 html.Label(
                                                     children=[
                                                         'Clustering Algorithm: ',
+                                                        html.I(id='clustering-tooltip',
+                                                               className='fa-regular fa-circle-question'),
                                                         dcc.RadioItems(
                                                             id='clustering-method',
                                                             options={
@@ -549,6 +595,16 @@ def get_layout():
                                                         ),
                                                     ]
                                                 ),
+                                                dbc.Tooltip([
+                                                    'Clustering Algorithms: (see ',
+                                                    html.A('https://scikit-learn.org/stable/modules/clustering.html', href='https://scikit-learn.org/stable/modules/clustering.html'),
+                                                    ')',
+                                                    html.Ul([
+                                                        html.Li('Gaussian Mixture Model: A probabilistic clustering algorithm similar to K-means which is capable of classifying elliptical groupings.'),
+                                                        html.Li('K-means: A very explainable, lightweight algorithm that works best with even-sized circular clusters.'),
+                                                        html.Li('Hierarchical: Point-wise agglomerative clustering technique which works best for separable clusters of non-elliptical shapes.')
+                                                    ])
+                                                ], target='clustering-tooltip', trigger='legacy'),
                                                 html.Br(),
                                                 html.Label([
                                                     'Number of clusters: ',
@@ -768,7 +824,7 @@ def get_layout():
                                                'visual cortex neurons) or upload your own data files. '
                                                'User uploaded data must be in .csv files where the first row '
                                                'contains column names and the first column contains cell '
-                                               'identifiers.',
+                                               'identifiers. ',
                                                'Files must have consistent cell (row) order.']),
                                         html.Ol(children=[
                                             html.Li(
@@ -812,12 +868,30 @@ def get_layout():
                                                'similarity matrices.'),
                                         html.P('Available alignment methods include:'),
                                         html.Ul([
-                                            html.Li([html.A('Linear Manifold Alignment', href='https://doi.org/10.1201/b11431')]),
-                                            html.Li([html.A('Nonlinear Manifold Alignment', href='https://doi.org/10.1201/b11431')]),
-                                            html.Li(['Canonical Correlation Analysis']),
-                                            html.Li([html.A('Manifold Alignment with Maximum Mean Discrepancy', href='https://doi.org/10.1145/3388440.3412410')]),
-                                            html.Li([html.A('UnionCom', href='https://doi.org/10.1093/bioinformatics/btaa443'),
-                                                     ' (unsupervised topological alignment for single-cell multi-omics integration)'])
+                                            html.Li([
+                                                html.A('Linear manifold alignment',
+                                                       href='https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-6329-2'),
+                                                ' is best for applications involving modalities which are closely related.  The linear nature of the method will prevent overfitting, but can miss more complex relationships.']),
+                                            html.Li([
+                                                html.A('Nonlinear manifold alignment',
+                                                       href='https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-6329-2'),
+                                                ' generates an embedding function mapping each modality onto the same manifold, allowing for interpretation of complex relationships.  NLMA will closely match associated cells, but might sacrifice cluster accuracy to do so.'
+                                            ]),
+                                            html.Li([
+                                                html.A('Canonical correlation analysis',
+                                                       href='https://doi.org/10.2307/2333955'),
+                                                ' is a robust method which specializes in characterizing the variance of the data overall.  This is best for modalities with few, closely related features.'
+                                            ]),
+                                            html.Li([
+                                                html.A('Manifold Alignment with Maximum Mean Discrepancy',
+                                                       href='https://pubmed.ncbi.nlm.nih.gov/34632462/'),
+                                                ' is an iterative machine learning method which aligns modalities using a series of counterbalanced losses.  MMD-MA is particularly good at identifying cell type clusters, but takes comparatively long to run.'
+                                            ]),
+                                            html.Li([
+                                                html.A('UnionCom',
+                                                       href='https://doi.org/10.1093/bioinformatics/btaa443'),
+                                                ' infers cross-modal correspondence before projecting each modality to similar latent spaces.  UnionCom is particularly good with aligning unmatched modalities, but takes a comparatively long time to run.']
+                                            )
                                         ]),
 
                                         html.P('Click the "Align Datasets" button to perform the alignment. '
@@ -1063,7 +1137,7 @@ transform="translate(-1 -0.61)"/>
                 ]),
                 html.P([
                     html.A('Privacy Notice ', href='http://www.wisc.edu/privacy-notice/'),
-                    ' | © 2022 Board of Regents of the ',
+                    ' | © 2023 Board of Regents of the ',
                     html.A('University of Wisconsin System', href='http://www.wisconsin.edu')
                 ])
             ]

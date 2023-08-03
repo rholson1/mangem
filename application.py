@@ -9,9 +9,14 @@ REDIS_URL = "redis://localhost:6379"
 celery_app = Celery(__name__, broker=REDIS_URL, backend=REDIS_URL)
 background_callback_manager = CeleryManager(celery_app)
 
+DEBUG = False
+if DEBUG:
+    requests_pathname_prefix = None
+else:
+    requests_pathname_prefix = '/mangem/'
 
 app = Dash(__name__, external_stylesheets=[dbc.icons.FONT_AWESOME], background_callback_manager=background_callback_manager,
-           requests_pathname_prefix='/mangem/')
+           requests_pathname_prefix=requests_pathname_prefix)
 
 app.title = 'MANGEM'
 application = app.server
